@@ -1,138 +1,137 @@
 # Ariana MCP
 
-Ein frueher MCP-Server fuer den Zugriff auf ArianaLab-Daten aus LLM-Clients wie Open WebUI. Der Server stellt die Tools per HTTP unter `/mcp` bereit und kann dadurch von Clients genutzt werden, die MCP ueber Streamable HTTP unterstuetzen.
+An early-stage MCP server for accessing ArianaLab data from LLM clients such as Open WebUI. The server exposes tools over HTTP at `/mcp` and can be used by clients that support MCP via Streamable HTTP.
 
-## Wichtiger Hinweis
+## Important Notice
 
-Dieses Projekt ist in einem sehr fruehen Entwicklungsstand. Die vorhandenen Tools sind experimentell, die Rueckgaben sind aktuell weitgehend rohe JSON-Antworten aus ArianaLab und das Verhalten wurde noch nicht breit mit verschiedenen LLMs validiert.
+This project is in a very early stage of development. The available tools are experimental, responses are currently mostly raw JSON from ArianaLab, and behavior has not been broadly validated across different LLMs.
 
-Besonders bei lokalen Ollama-Modellen ist nicht garantiert, dass das Modell die MCP-Tools zuverlaessig erkennt, korrekt auswaehlt oder die Antworten sinnvoll verarbeitet. Viele Modelle ignorieren Tools, verwenden falsche Parameter oder brechen Tool-Aufrufe ab. Fuer brauchbare Ergebnisse sollte ein Modell mit guter Tool- bzw. Function-Calling-Unterstuetzung verwendet werden.
+Especially with local Ollama models, there is no guarantee that the model will reliably recognize MCP tools, select the correct ones, or process responses meaningfully. Many models ignore tools, use incorrect parameters, or abort tool calls. For usable results, use a model with solid tool or function-calling support.
 
-## Aktuelle Features
+## Current Features
 
-- MCP-Server auf ASP.NET Core mit HTTP-Transport unter `http://<host>:5000/mcp`.
-- Stateless MCP-Transport fuer einfache Einbindung in webbasierte Clients.
-- Health-Endpunkt unter `/health`.
-- Info-Endpunkt unter `/`, der Name und Version der Anwendung zurueckgibt.
-- Konfiguration ueber `appsettings.json`, Umgebungsvariablen und optional `appsettings.override.json`.
-- ArianaLab-Anbindung per HTTP-Client mit Basic Auth.
-- Serilog-Konsolenlogging.
-- Dockerfile und Docker-Compose-Grundkonfiguration fuer den Betrieb zusammen mit Open WebUI.
+- MCP server on ASP.NET Core with HTTP transport at `http://<host>:5000/mcp`.
+- Stateless MCP transport for easy integration with web-based clients.
+- Health endpoint at `/health`.
+- Info endpoint at `/` that returns the application name and version.
+- Configuration via `appsettings.json`, environment variables, and optionally `appsettings.override.json`.
+- ArianaLab integration via HTTP client with Basic Auth.
+- Serilog console logging.
+- Dockerfile and Docker Compose baseline configuration for running alongside Open WebUI.
 
-### MCP-Tools
+### MCP Tools
 
-| Tool | Beschreibung |
+| Tool | Description |
 | --- | --- |
-| `customer_by_name` | Sucht einen Kunden anhand des Namens und gibt die Kunden-JSON-Antwort aus ArianaLab zurueck. |
-| `customer_info_by_id` | Gibt Kundeninformationen fuer eine Kunden-ID zurueck. |
-| `all_customers` | Gibt alle Kunden als JSON zurueck. Dieser Aufruf kann wegen der Datenmenge laenger dauern. |
-| `sample_by_id` | Sucht eine Probe anhand der Proben-ID und gibt die JSON-Antwort aus ArianaLab zurueck. |
+| `customer_by_name` | Looks up a customer by name and returns the customer JSON response from ArianaLab. |
+| `customer_info_by_id` | Returns customer information for a customer ID. |
+| `all_customers` | Returns all customers as JSON. This call may take longer due to payload size. |
+| `sample_by_id` | Looks up a sample by sample ID and returns the JSON response from ArianaLab. |
 
-Alle aktuellen Tools sind lesend, idempotent und nicht destruktiv markiert.
+All current tools are marked as read-only, idempotent, and non-destructive.
 
-## Voraussetzungen
+## Prerequisites
 
-- .NET 10 SDK, wenn der MCP-Server lokal gestartet wird.
-- Docker und Docker Compose, wenn Open WebUI und der MCP-Server als Container laufen sollen.
-- Eine laufende Ollama-Instanz, z. B. lokal auf `http://localhost:11434`.
-- Open WebUI mit MCP-Unterstuetzung fuer Streamable HTTP.
-- ArianaLab-Zugangsdaten.
+- .NET 10 SDK, if running the MCP server locally.
+- Docker and Docker Compose, if running Open WebUI and the MCP server as containers.
+- A running Ollama instance, e.g. locally at `http://localhost:11434`.
+- Open WebUI with MCP support for Streamable HTTP.
+- ArianaLab credentials.
 
-## Konfiguration
+## Configuration
 
-Der MCP-Server erwartet folgende Umgebungsvariablen:
+The MCP server expects the following environment variables:
 
 ```powershell
-$env:ARIANALAB_USER = "<benutzername>"
-$env:ARIANALAB_PASSWORD = "<passwort>"
+$env:ARIANALAB_USER = "<username>"
+$env:ARIANALAB_PASSWORD = "<password>"
 $env:ARIANALAB_BASE_URL = "https://klims.labor-kneissler.de/"
 ```
 
-Alternativ kann lokal eine nicht versionierte `appsettings.override.json` im Projektordner `Ariana-Mcp` verwendet werden:
+Alternatively, you can use a non-versioned `appsettings.override.json` locally in the `Ariana-Mcp` project folder:
 
 ```json
 {
   "AraianLab": {
-    "User": "<benutzername>",
-    "Password": "<passwort>",
+    "User": "<username>",
+    "Password": "<password>",
     "BaseUrl": "https://klims.labor-kneissler.de/"
   }
 }
 ```
 
-Zugangsdaten sollten nicht in Git committet werden.
+Credentials should not be committed to Git.
 
-## MCP-Server lokal starten
+## Running the MCP Server Locally
 
-Aus dem Repository-Root:
+From the repository root:
 
 ```powershell
 dotnet run --project .\Ariana-Mcp\Ariana-Mcp.csproj --urls http://localhost:5000
 ```
 
-Danach sollten diese Endpunkte erreichbar sein:
+After that, these endpoints should be reachable:
 
 - `http://localhost:5000/`
 - `http://localhost:5000/health`
 - `http://localhost:5000/mcp`
 
-Der `/mcp`-Endpunkt ist der relevante Endpunkt fuer Open WebUI oder andere MCP-Clients.
+The `/mcp` endpoint is the relevant endpoint for Open WebUI or other MCP clients.
 
-## Verwendung mit Open WebUI und Ollama
+## Using with Open WebUI and Ollama
 
-Eine typische lokale Architektur sieht so aus:
+A typical local architecture looks like this:
 
 ```text
 Ollama <-> Open WebUI <-> Ariana MCP <-> ArianaLab
 ```
 
-Ollama stellt das Sprachmodell bereit. Open WebUI ist die Chat-Oberflaeche und verbindet das Modell mit externen Tools. Ariana MCP stellt die ArianaLab-Funktionen als MCP-Tools bereit.
+Ollama provides the language model. Open WebUI is the chat interface and connects the model to external tools. Ariana MCP exposes ArianaLab functionality as MCP tools.
 
-### Open WebUI konfigurieren
+### Configuring Open WebUI
 
-1. Open WebUI starten und mit Ollama verbinden.
-2. In Open WebUI zu `Admin Panel -> Settings -> External Tools` wechseln.
-3. Einen neuen Server hinzufuegen.
-4. Als Typ `MCP (Streamable HTTP)` auswaehlen.
-5. Als URL den MCP-Endpunkt eintragen:
-   - Bei lokalem Start des MCP-Servers: `http://host.docker.internal:5000/mcp`, wenn Open WebUI in Docker laeuft.
-   - Wenn Open WebUI und der MCP-Server im gleichen Docker-Compose-Netz laufen: `http://Ariana-Mcp:5000/mcp`.
-   - Wenn Open WebUI direkt auf dem Host laeuft: `http://localhost:5000/mcp`.
-6. Speichern und die Tools im Chat bzw. fuer das gewuenschte Modell aktivieren.
-7. Ein Modell verwenden, das Tool- bzw. Function-Calling unterstuetzt. In Open WebUI sollte Function Calling nach Moeglichkeit auf `Native` stehen.
+1. Start Open WebUI and connect it to Ollama.
+2. In Open WebUI, go to `Admin Panel -> Settings -> External Tools`.
+3. Add a new server.
+4. Set the type to `MCP (Streamable HTTP)`.
+5. Enter the MCP endpoint URL:
+   - If the MCP server runs locally on the host and Open WebUI runs in Docker: `http://host.docker.internal:5000/mcp`.
+   - If Open WebUI and the MCP server run in the same Docker Compose network: `http://Ariana-Mcp:5000/mcp`.
+   - If Open WebUI runs directly on the host: `http://localhost:5000/mcp`.
+6. Save and enable the tools in chat or for the desired model.
+7. Use a model that supports tool or function calling. In Open WebUI, set Function Calling to `Native` if possible.
 
-Beispiel-Prompts:
+Example prompts:
 
 ```text
-Suche den Kunden mit dem Namen "<Name>" ueber die verfuegbaren Tools.
+Find the customer named "<Name>" using the available tools.
 ```
 
 ```text
-Hole die Informationen zur Kunden-ID "14197".
+Get the information for customer ID "14197".
 ```
 
 ```text
-Suche die Probe "26-0318054".
+Look up sample "26-0318054".
 ```
 
-## Start mit Docker Compose
+## Starting with Docker Compose
 
-Die vorhandene `docker-compose.yml` enthaelt einen MCP-Service und Open WebUI. Vor dem Start sollten die ArianaLab-Zugangsdaten und die Ollama-URL angepasst werden.
+The existing `docker-compose.yml` includes an MCP service and Open WebUI. Before starting, adjust the ArianaLab credentials and the Ollama URL.
 
 ```powershell
 docker compose up --build
 ```
 
-Danach ist Open WebUI standardmaessig unter `http://localhost:8080` erreichbar. Der MCP-Server ist auf dem Host unter `http://localhost:5000` und innerhalb des Compose-Netzwerks unter `http://Ariana-Mcp:5000` erreichbar.
+After that, Open WebUI is available by default at `http://localhost:8080`. The MCP server is reachable on the host at `http://localhost:5000` and inside the Compose network at `http://Ariana-Mcp:5000`.
 
-Wenn Ollama auf dem Windows-Host laeuft und Open WebUI im Container gestartet wird, ist haeufig `http://host.docker.internal:11434` die passende Ollama-URL. Die aktuell in `docker-compose.yml` gesetzte `OLLAMA_BASE_URL` muss ggf. an die lokale Umgebung angepasst werden.
+If Ollama runs on the Windows host and Open WebUI is started in a container, `http://host.docker.internal:11434` is often the correct Ollama URL. The `OLLAMA_BASE_URL` currently set in `docker-compose.yml` may need to be adjusted for your local environment.
 
-## Bekannte Einschraenkungen
+## Known Limitations
 
-- Die Tool-Antworten sind aktuell rohe JSON-Strings und noch nicht fuer LLMs aufbereitet.
-- Es gibt noch keine Authentifizierung oder Zugriffsbeschraenkung fuer den MCP-Endpunkt selbst.
-- Fehler werden teilweise als Textantworten an das Modell zurueckgegeben.
-- `all_customers` kann grosse Datenmengen liefern und langsam sein.
-- Lokale Modelle ueber Ollama koennen MCP-Tools je nach Modell und Open-WebUI-Konfiguration unzuverlaessig verwenden.
-- Die Schnittstelle und Tool-Namen koennen sich noch aendern.
-
+- Tool responses are currently raw JSON strings and are not yet tailored for LLMs.
+- There is no authentication or access control on the MCP endpoint itself.
+- Errors are sometimes returned to the model as plain text responses.
+- `all_customers` can return large amounts of data and may be slow.
+- Local models via Ollama may use MCP tools unreliably depending on the model and Open WebUI configuration.
+- The API and tool names may still change.
