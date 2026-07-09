@@ -53,6 +53,17 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
         }
     }
 
+    public Task<string> GetCustomersByNamesAsync(
+        IReadOnlyList<string> names,
+        CancellationToken cancellationToken = default)
+        => BatchLookupHelper.ExecuteAsync(
+            names,
+            "names",
+            "name darf nicht leer sein.",
+            "name",
+            GetCustomerByNameAsync,
+            cancellationToken);
+
     public async Task<string> GetCustomerInfoAsync(
         string customerId,
         CancellationToken cancellationToken = default)
@@ -76,6 +87,15 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
                 ex);
         }
     }
+
+    public Task<string> GetCustomerInfosAsync(
+        IReadOnlyList<string> customerIds,
+        CancellationToken cancellationToken = default)
+        => BatchLookupHelper.ExecuteAsync(
+            customerIds,
+            "customerId darf nicht leer sein.",
+            GetCustomerInfoAsync,
+            cancellationToken);
 
     public async Task<string> SearchCustomersAsync(
         string search,
@@ -102,6 +122,23 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
             limit,
             customers = matches,
         });
+    }
+
+    public Task<string> SearchCustomersBatchAsync(
+        IReadOnlyList<string> searches,
+        int limit = DefaultSearchLimit,
+        CancellationToken cancellationToken = default)
+    {
+        limit = Math.Clamp(limit, 1, MaxSearchLimit);
+
+        return BatchLookupHelper.ExecuteAsync(
+            searches,
+            "searches",
+            "search darf nicht leer sein.",
+            "search",
+            (search, ct) => SearchCustomersAsync(search, limit, ct),
+            cancellationToken,
+            envelopeExtras: new Dictionary<string, object?> { ["limit"] = limit });
     }
 
     private static List<CustomerSummary> FilterCustomers(string json, string search, int limit)

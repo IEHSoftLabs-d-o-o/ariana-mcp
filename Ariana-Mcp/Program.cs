@@ -22,6 +22,7 @@ builder.Services
             Lesender Zugriff auf ArianaLab (Labor-LIMS). Die Daten und Antworten sind auf Deutsch.
             Typischer Ablauf: search_customers (Teil des Namens) oder customer_by_name (exakter Name), um einen Kunden zu finden,
             danach customer_info_by_id für Detailinformationen und sample_by_id für Proben.
+            Alle Tools akzeptieren Listen von Eingaben und liefern pro Eintrag ein eigenes Ergebnis; fehlende Einträge brechen die gesamte Anfrage nicht ab.
             Proben-IDs haben das Format 'JJ-NNNNNNN' (z. B. '26-0318054'). Kunden-IDs sind numerisch (KundeId).
             customer_by_name erfordert einen exakt passenden Namen; bei nur teilweise bekanntem Namen bitte search_customers verwenden.
             """;

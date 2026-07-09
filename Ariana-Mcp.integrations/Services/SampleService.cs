@@ -25,4 +25,13 @@ public sealed class SampleService(IHttpClientFactory httpClientFactory)
             throw new ArianaLabException($"Keine Probe mit der ID '{sampleId}' gefunden.", HttpStatusCode.NotFound, ex);
         }
     }
+
+    public Task<string> GetSamplesByIdsAsync(
+        IReadOnlyList<string> sampleIds,
+        CancellationToken cancellationToken = default)
+        => BatchLookupHelper.ExecuteAsync(
+            sampleIds,
+            "sampleId darf nicht leer sein.",
+            GetSampleByIdAsync,
+            cancellationToken);
 }

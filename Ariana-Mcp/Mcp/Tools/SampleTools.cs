@@ -14,12 +14,14 @@ public sealed class SampleTools(SampleService sampleService)
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
-    [Description("Sucht eine Laborprobe (Probe) anhand der ID und gibt das JSON aus ArianaLab zurück.")]
+    [Description(
+        "Sucht eine oder mehrere Laborproben (Proben) anhand ihrer IDs und gibt pro ID ein Ergebnis mit ArianaLab-JSON zurück. " +
+        "Fehlende oder ungültige IDs führen nicht zum Abbruch der gesamten Anfrage.")]
     public Task<string> SampleById(
-        [Description("Proben-ID im Format 'JJ-NNNNNNN', z. B. '26-0318054'.")]
-        string sampleId,
+        [Description("Liste von Proben-IDs im Format 'JJ-NNNNNNN', z. B. ['26-0318054', '26-0318055'].")]
+        IReadOnlyList<string> sampleIds,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
-            () => sampleService.GetSampleByIdAsync(sampleId, cancellationToken),
+            () => sampleService.GetSamplesByIdsAsync(sampleIds, cancellationToken),
             cancellationToken);
 }
