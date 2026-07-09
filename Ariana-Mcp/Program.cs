@@ -15,7 +15,17 @@ builder.ConfigureLoggingSettings();
 builder.Services.AddAraianLabHttpClient(builder.Configuration);
 
 builder.Services
-    .AddMcpServer()
+    .AddMcpServer(options =>
+    {
+        options.ServerInstructions =
+            """
+            Read-only access to ArianaLab (laboratory LIMS). German domain terms: Kunde = customer, Probe = sample.
+            Typical workflow: search_customers (partial name) or customer_by_name (exact name) to find a customer,
+            then customer_info_by_id for detailed information, and sample_by_id for samples.
+            Sample ids use the format 'YY-NNNNNNN' (e.g. '26-0318054'). Customer ids are numeric (KundeId).
+            customer_by_name requires an exact name match; prefer search_customers when you only have part of a name.
+            """;
+    })
     .WithHttpTransport(o => o.Stateless = true)
     .WithToolsFromAssembly();
 

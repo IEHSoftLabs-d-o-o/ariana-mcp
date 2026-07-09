@@ -7,20 +7,25 @@ namespace Ariana_Mcp.Integrations.AraianLab;
 
 public static class ServiceCollectionExtensions
 {
+    private static readonly TimeSpan HttpClientTimeout = TimeSpan.FromSeconds(60);
+
     public static IServiceCollection AddAraianLabHttpClient(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<AraianLabClientOptions>(
-            configuration.GetSection(AraianLabClientOptions.SectionName));
+        services.AddOptions<AraianLabClientOptions>()
+            .Bind(configuration.GetSection(AraianLabClientOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.AddTransient<AraianLabAuthHandler>();
         services.AddTransient<CustomerService>();
         services.AddTransient<SampleService>();
         services.AddHttpClient(ArianaLabHttp.ClientName, (sp, client) =>
             {
                 var options = sp.GetRequiredService<IOptions<AraianLabClientOptions>>().Value;
-                if (!string.IsNullOrWhiteSpace(options.BaseUrl))
-                    client.BaseAddress = new Uri(options.BaseUrl);
+                client.BaseAddress = new Uri(options.BaseUrl);
+                client.Timeout = HttpClientTimeout;
             })
             .AddHttpMessageHandler<AraianLabAuthHandler>();
 
