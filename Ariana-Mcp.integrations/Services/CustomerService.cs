@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Ariana_Mcp.integrations.Exceptions;
+using Ariana_Mcp.integrations.Helpers;
 
 namespace Ariana_Mcp.integrations.Services;
 
@@ -15,14 +16,13 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
         if (string.IsNullOrWhiteSpace(name))
             throw new ArianaLabException("name darf nicht leer sein.");
 
-        var client = CreateClient();
         var customerInfoUri =
             $"Rest/Mad/Kunden/KundenInformationen/ByName?name={Uri.EscapeDataString(name)}";
 
         string customerInfoBody;
         try
         {
-            customerInfoBody = await GetAsStringAsync(client, customerInfoUri, cancellationToken);
+            customerInfoBody = await GetAsync(customerInfoUri, cancellationToken);
         }
         catch (ArianaLabException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
@@ -39,18 +39,7 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
                 $"Kein Kunde mit dem exakten Namen '{name}' gefunden. Bitte search_customers mit einem Teilnamen verwenden.");
         }
 
-        var customerUri = $"Rest/Mad/Kunden/{Uri.EscapeDataString(kundeId)}";
-        try
-        {
-            return await GetAsStringAsync(client, customerUri, cancellationToken);
-        }
-        catch (ArianaLabException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-        {
-            throw new ArianaLabException(
-                $"Kunde '{name}' wurde gefunden (ID {kundeId}), aber die vollständigen Kundendaten sind nicht verfügbar.",
-                HttpStatusCode.NotFound,
-                ex);
-        }
+        return await GetCustomerAsync(kundeId, cancellationToken);
     }
 
     public Task<string> GetCustomersByNamesAsync(
@@ -64,6 +53,27 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
             GetCustomerByNameAsync,
             cancellationToken);
 
+    public async Task<string> GetCustomerAsync(
+        string nummer,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(nummer))
+            throw new ArianaLabException("nummer darf nicht leer sein.");
+
+        var requestUri = $"Rest/Mad/Kunden/{Uri.EscapeDataString(nummer)}";
+        try
+        {
+            return await GetAsync(requestUri, cancellationToken);
+        }
+        catch (ArianaLabException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            throw new ArianaLabException(
+                $"Kein Kunde mit der Nummer '{nummer}' gefunden.",
+                HttpStatusCode.NotFound,
+                ex);
+        }
+    }
+
     public async Task<string> GetCustomerInfoAsync(
         string customerId,
         CancellationToken cancellationToken = default)
@@ -71,18 +81,17 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
         if (string.IsNullOrWhiteSpace(customerId))
             throw new ArianaLabException("customerId darf nicht leer sein.");
 
-        var client = CreateClient();
         var requestUri =
             $"Rest/Mad/Kunden/{Uri.EscapeDataString(customerId)}/KundenInformationen";
 
         try
         {
-            return await GetAsStringAsync(client, requestUri, cancellationToken);
+            return await GetAsync(requestUri, cancellationToken);
         }
         catch (ArianaLabException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
             throw new ArianaLabException(
-                $"Keine Kundeninformationen für die Kunden-ID '{customerId}' gefunden.",
+                $"Keine Kundeninformationen für die Kundennummer '{customerId}' gefunden.",
                 HttpStatusCode.NotFound,
                 ex);
         }
@@ -97,31 +106,48 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
             GetCustomerInfoAsync,
             cancellationToken);
 
+    public async Task<string> GetCustomerInfoBySampleAsync(
+        string tagebuchnummer,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(tagebuchnummer))
+            throw new ArianaLabException("tagebuchnummer darf nicht leer sein.");
+
+        var encoded = ArianaLabUriHelper.EncodePathSegment(tagebuchnummer);
+        var requestUri =
+            $"Rest/Mad/Kunden/KundenInformationen/ByProbe?tagebuchnummer={Uri.EscapeDataString(encoded)}";
+
+        try
+        {
+            return await GetAsync(requestUri, cancellationToken);
+        }
+        catch (ArianaLabException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            throw new ArianaLabException(
+                $"Keine Kundeninformationen zur Probe '{tagebuchnummer}' gefunden.",
+                HttpStatusCode.NotFound,
+                ex);
+        }
+    }
+
     public async Task<string> SearchCustomersAsync(
-        string search,
+        string? q,
+        string? name,
         int limit = DefaultSearchLimit,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(search))
-            throw new ArianaLabException("search darf nicht leer sein.");
-
-        var trimmedSearch = search.Trim();
-        if (trimmedSearch.Length < 2)
-            throw new ArianaLabException("search muss mindestens 2 Zeichen lang sein.");
+        var query = BuildCustomerSearchQuery(q, name);
+        if (string.IsNullOrWhiteSpace(query))
+            throw new ArianaLabException("Mindestens einer der Parameter 'q' oder 'name' muss angegeben werden.");
 
         limit = Math.Clamp(limit, 1, MaxSearchLimit);
 
-        var client = CreateClient();
-        var allCustomersJson = await GetAsStringAsync(client, "Rest/Mad/Kunden", cancellationToken);
-        var matches = FilterCustomers(allCustomersJson, trimmedSearch, limit);
+        var effectiveQuery = query.TrimStart().StartsWith('{')
+            ? EasyQueryBuilder.EnsureLimit(query, limit)
+            : EasyQueryBuilder.BuildJson(ParseQueryConditions(query), limit);
 
-        return JsonSerializer.Serialize(new
-        {
-            search = trimmedSearch,
-            matchCount = matches.Count,
-            limit,
-            customers = matches,
-        });
+        var body = await GetQueryAsync("Rest/Mad/Kunden", effectiveQuery, cancellationToken);
+        return HalResponseHelper.ProjectCustomers(body, limit);
     }
 
     public Task<string> SearchCustomersBatchAsync(
@@ -136,70 +162,69 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
             "searches",
             "search darf nicht leer sein.",
             "search",
-            (search, ct) => SearchCustomersAsync(search, limit, ct),
+            (search, ct) => SearchCustomersAsync(null, search, limit, ct),
             cancellationToken,
             envelopeExtras: new Dictionary<string, object?> { ["limit"] = limit });
     }
 
-    private static List<CustomerSummary> FilterCustomers(string json, string search, int limit)
+    private static string? BuildCustomerSearchQuery(string? q, string? name)
     {
-        using var doc = JsonDocument.Parse(json);
-        if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            throw new ArianaLabException("Unerwartetes Format der Kundenliste von ArianaLab.");
+        if (!string.IsNullOrWhiteSpace(q))
+            return q.Trim();
 
-        var matches = new List<CustomerSummary>();
-        var comparison = StringComparison.OrdinalIgnoreCase;
-
-        foreach (var element in doc.RootElement.EnumerateArray())
-        {
-            var summary = TryGetCustomerSummary(element);
-            if (summary is null)
-                continue;
-
-            if (!summary.Name.Contains(search, comparison)
-                && !summary.CustomerId.Contains(search, comparison))
-            {
-                continue;
-            }
-
-            matches.Add(summary);
-            if (matches.Count >= limit)
-                break;
-        }
-
-        return matches;
-    }
-
-    private static CustomerSummary? TryGetCustomerSummary(JsonElement element)
-    {
-        var customerId = TryGetStringProperty(element, "KundeId", "Id", "KundenId");
-        var name = TryGetStringProperty(element, "Name", "KundenName", "Bezeichnung", "Firma");
-
-        if (customerId is null && name is null)
+        if (string.IsNullOrWhiteSpace(name))
             return null;
 
-        return new CustomerSummary(customerId ?? string.Empty, name ?? string.Empty);
+        var trimmed = name.Trim();
+        if (trimmed.Length < 2)
+            throw new ArianaLabException("name muss mindestens 2 Zeichen lang sein.");
+
+        return EasyQueryBuilder.BuildContains("Anzeigename", trimmed);
     }
 
-    private static string? TryGetStringProperty(JsonElement element, params string[] propertyNames)
+    private static IReadOnlyList<EasyQueryCondition> ParseQueryConditions(string query)
     {
-        foreach (var propertyName in propertyNames)
+        if (query.TrimStart().StartsWith('{'))
         {
-            if (!element.TryGetProperty(propertyName, out var value))
-                continue;
+            using var doc = JsonDocument.Parse(query);
+            if (!doc.RootElement.TryGetProperty("Conditions", out var conditions)
+                || conditions.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
 
-            if (value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-                continue;
+            var result = new List<EasyQueryCondition>();
+            foreach (var condition in conditions.EnumerateArray())
+            {
+                var property = HalResponseHelper.TryGetStringProperty(condition, "Property");
+                var op = HalResponseHelper.TryGetStringProperty(condition, "Operator") ?? "=";
+                var pattern = condition.TryGetProperty("Pattern", out var patternElement)
+                    ? patternElement.ValueKind == JsonValueKind.String
+                        ? patternElement.GetString() ?? string.Empty
+                        : patternElement.ToString()
+                    : string.Empty;
 
-            var text = value.ValueKind == JsonValueKind.String
-                ? value.GetString()
-                : value.ToString();
+                if (!string.IsNullOrWhiteSpace(property))
+                    result.Add(new EasyQueryCondition(property, op, pattern));
+            }
 
-            if (!string.IsNullOrWhiteSpace(text))
-                return text;
+            return result;
         }
 
-        return null;
+        return query.Split('|', StringSplitOptions.RemoveEmptyEntries)
+            .Select(part =>
+            {
+                var eq = part.IndexOf('=');
+                if (eq <= 0)
+                    return new EasyQueryCondition(part, "~*", $"*{part}*");
+
+                var property = part[..eq];
+                var pattern = part[(eq + 1)..];
+                return property.Contains('~')
+                    ? new EasyQueryCondition(property[..property.IndexOf('~')], property[property.IndexOf('~')..], pattern)
+                    : EasyQueryCondition.Contains(property, pattern);
+            })
+            .ToList();
     }
 
     private static string? TryGetKundeId(string json)
@@ -210,23 +235,11 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
         try
         {
             using var doc = JsonDocument.Parse(json);
-            if (!doc.RootElement.TryGetProperty("KundeId", out var kundeId))
-                return null;
-
-            if (kundeId.ValueKind == JsonValueKind.Null)
-                return null;
-
-            var value = kundeId.ValueKind == JsonValueKind.String
-                ? kundeId.GetString()
-                : kundeId.ToString();
-
-            return string.IsNullOrWhiteSpace(value) ? null : value;
+            return HalResponseHelper.TryGetStringProperty(doc.RootElement, "KundeId", "Nummer", "Id");
         }
         catch (JsonException)
         {
             return null;
         }
     }
-
-    private sealed record CustomerSummary(string CustomerId, string Name);
 }
