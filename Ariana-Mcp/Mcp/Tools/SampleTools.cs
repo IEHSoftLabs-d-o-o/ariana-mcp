@@ -10,13 +10,13 @@ public sealed class SampleTools(SampleService sampleService)
 {
     [McpServerTool(
         Name = "sample_by_id",
-        Title = "Sample by id",
+        Title = "Probe nach ID",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
-    [Description("Looks up a laboratory sample (Probe) by id and returns the JSON from ArianaLab.")]
+    [Description("Sucht eine Laborprobe (Probe) anhand der ID und gibt das JSON aus ArianaLab zurück.")]
     public Task<string> SampleById(
-        [Description("Sample (Probe) id in the format 'YY-NNNNNNN', e.g. '26-0318054'.")]
+        [Description("Proben-ID im Format 'JJ-NNNNNNN', z. B. '26-0318054'.")]
         string sampleId,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(

@@ -31,13 +31,13 @@ public abstract class ArianaLabServiceBase(IHttpClientFactory httpClientFactory)
         return statusCode switch
         {
             HttpStatusCode.NotFound => new ArianaLabException(
-                notFoundMessage ?? $"Resource not found: {requestUri}",
+                notFoundMessage ?? $"Ressource nicht gefunden: {requestUri}",
                 statusCode),
             HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => new ArianaLabException(
-                "ArianaLab authentication failed. Check AraianLab credentials and BaseUrl configuration.",
+                "Authentifizierung bei ArianaLab fehlgeschlagen. Bitte AraianLab-Zugangsdaten und BaseUrl-Konfiguration prüfen.",
                 statusCode),
             _ => new ArianaLabException(
-                $"ArianaLab request failed (HTTP {(int)statusCode} {statusCode}): {TruncateBody(body)}",
+                $"ArianaLab-Anfrage fehlgeschlagen (HTTP {(int)statusCode} {statusCode}): {TruncateBody(body)}",
                 statusCode),
         };
     }
@@ -45,7 +45,7 @@ public abstract class ArianaLabServiceBase(IHttpClientFactory httpClientFactory)
     private static string TruncateBody(string body, int maxLength = 500)
     {
         if (string.IsNullOrWhiteSpace(body))
-            return "(empty response body)";
+            return "(leerer Antworttext)";
 
         var trimmed = body.Trim();
         return trimmed.Length <= maxLength ? trimmed : $"{trimmed[..maxLength]}...";

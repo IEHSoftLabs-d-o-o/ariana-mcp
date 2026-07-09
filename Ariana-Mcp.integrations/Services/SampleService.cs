@@ -11,7 +11,7 @@ public sealed class SampleService(IHttpClientFactory httpClientFactory)
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(sampleId))
-            throw new ArianaLabException("sampleId must not be empty.");
+            throw new ArianaLabException("sampleId darf nicht leer sein.");
 
         var client = CreateClient();
         var requestUri = $"Rest/Opd/Proben/{Uri.EscapeDataString(sampleId)}/";
@@ -22,7 +22,7 @@ public sealed class SampleService(IHttpClientFactory httpClientFactory)
         }
         catch (ArianaLabException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            throw new ArianaLabException($"No sample found with id '{sampleId}'.", HttpStatusCode.NotFound, ex);
+            throw new ArianaLabException($"Keine Probe mit der ID '{sampleId}' gefunden.", HttpStatusCode.NotFound, ex);
         }
     }
 }

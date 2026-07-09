@@ -13,7 +13,7 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
     public async Task<string> GetCustomerByNameAsync(string name, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArianaLabException("name must not be empty.");
+            throw new ArianaLabException("name darf nicht leer sein.");
 
         var client = CreateClient();
         var customerInfoUri =
@@ -27,7 +27,7 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
         catch (ArianaLabException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
             throw new ArianaLabException(
-                $"No customer found with exact name '{name}'. Try search_customers with a partial name.",
+                $"Kein Kunde mit dem exakten Namen '{name}' gefunden. Bitte search_customers mit einem Teilnamen verwenden.",
                 HttpStatusCode.NotFound,
                 ex);
         }
@@ -36,7 +36,7 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
         if (kundeId is null)
         {
             throw new ArianaLabException(
-                $"No customer found with exact name '{name}'. Try search_customers with a partial name.");
+                $"Kein Kunde mit dem exakten Namen '{name}' gefunden. Bitte search_customers mit einem Teilnamen verwenden.");
         }
 
         var customerUri = $"Rest/Mad/Kunden/{Uri.EscapeDataString(kundeId)}";
@@ -47,7 +47,7 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
         catch (ArianaLabException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
             throw new ArianaLabException(
-                $"Customer '{name}' was found (id {kundeId}) but full customer data is unavailable.",
+                $"Kunde '{name}' wurde gefunden (ID {kundeId}), aber die vollständigen Kundendaten sind nicht verfügbar.",
                 HttpStatusCode.NotFound,
                 ex);
         }
@@ -58,7 +58,7 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(customerId))
-            throw new ArianaLabException("customerId must not be empty.");
+            throw new ArianaLabException("customerId darf nicht leer sein.");
 
         var client = CreateClient();
         var requestUri =
@@ -71,7 +71,7 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
         catch (ArianaLabException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
             throw new ArianaLabException(
-                $"No customer information found for customer id '{customerId}'.",
+                $"Keine Kundeninformationen für die Kunden-ID '{customerId}' gefunden.",
                 HttpStatusCode.NotFound,
                 ex);
         }
@@ -83,11 +83,11 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(search))
-            throw new ArianaLabException("search must not be empty.");
+            throw new ArianaLabException("search darf nicht leer sein.");
 
         var trimmedSearch = search.Trim();
         if (trimmedSearch.Length < 2)
-            throw new ArianaLabException("search must be at least 2 characters.");
+            throw new ArianaLabException("search muss mindestens 2 Zeichen lang sein.");
 
         limit = Math.Clamp(limit, 1, MaxSearchLimit);
 
@@ -108,7 +108,7 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
     {
         using var doc = JsonDocument.Parse(json);
         if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            throw new ArianaLabException("Unexpected customer list format from ArianaLab.");
+            throw new ArianaLabException("Unerwartetes Format der Kundenliste von ArianaLab.");
 
         var matches = new List<CustomerSummary>();
         var comparison = StringComparison.OrdinalIgnoreCase;

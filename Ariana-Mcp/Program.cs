@@ -19,11 +19,11 @@ builder.Services
     {
         options.ServerInstructions =
             """
-            Read-only access to ArianaLab (laboratory LIMS). German domain terms: Kunde = customer, Probe = sample.
-            Typical workflow: search_customers (partial name) or customer_by_name (exact name) to find a customer,
-            then customer_info_by_id for detailed information, and sample_by_id for samples.
-            Sample ids use the format 'YY-NNNNNNN' (e.g. '26-0318054'). Customer ids are numeric (KundeId).
-            customer_by_name requires an exact name match; prefer search_customers when you only have part of a name.
+            Lesender Zugriff auf ArianaLab (Labor-LIMS). Die Daten und Antworten sind auf Deutsch.
+            Typischer Ablauf: search_customers (Teil des Namens) oder customer_by_name (exakter Name), um einen Kunden zu finden,
+            danach customer_info_by_id für Detailinformationen und sample_by_id für Proben.
+            Proben-IDs haben das Format 'JJ-NNNNNNN' (z. B. '26-0318054'). Kunden-IDs sind numerisch (KundeId).
+            customer_by_name erfordert einen exakt passenden Namen; bei nur teilweise bekanntem Namen bitte search_customers verwenden.
             """;
     })
     .WithHttpTransport(o => o.Stateless = true)
