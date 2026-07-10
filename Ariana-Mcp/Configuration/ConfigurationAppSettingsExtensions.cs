@@ -9,13 +9,13 @@ internal static class ConfigurationAppSettingsExtensions
 {
     internal static WebApplicationBuilder ConfigureAppSettings(this WebApplicationBuilder builder, string[] args)
     {
-        var contentRootPath = builder.Environment.ContentRootPath;
+        var configBasePath = AppContext.BaseDirectory;
         var environmentName = builder.Environment.EnvironmentName;
 
         builder.Configuration.RemoveDefaultConfigSources();
 
         builder.Configuration
-            .SetBasePath(contentRootPath)
+            .SetBasePath(configBasePath)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddJsonFile($"appsettings.{environmentName}.json", optional: true, reloadOnChange: true)
             .AddJsonFile("appsettings.override.json", optional: true, reloadOnChange: true)

@@ -1,7 +1,8 @@
-name: Ariana-Mcp
+name: ariana-mcp
 
 services:
-  Ariana-Mcp:
+  ariana-mcp:
+    image: ariana-mcp
     build:
       context: .
       dockerfile: Ariana-Mcp/Dockerfile
@@ -23,7 +24,7 @@ services:
     volumes:
       - open-webui-data:/app/backend/data
     depends_on:
-      - Ariana-Mcp
+      - ariana-mcp
     restart: unless-stopped
 
 volumes:
