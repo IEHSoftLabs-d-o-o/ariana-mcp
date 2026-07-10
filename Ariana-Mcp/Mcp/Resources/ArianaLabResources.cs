@@ -19,11 +19,11 @@ public sealed class ArianaLabResources(
 {
     [McpServerResource(
         UriTemplate = "arianalab://sample/{tagebuchnummer}",
-        Name = "Probe",
+        Name = "Sample",
         MimeType = "application/json")]
     [Description(
-        "Lädt die vollständigen Daten zu einer Laborprobe anhand der Tagebuchnummer. " +
-        "Verwenden, wenn Details zu einer bestimmten Probe benötigt werden, z. B. '26-0318054'.")]
+        "Loads the full data for a lab sample by lab journal number. " +
+        "Use when details for a specific sample are needed, for example '26-0318054'.")]
     public Task<TextResourceContents> GetSample(string tagebuchnummer, CancellationToken cancellationToken)
         => McpResourceRunner.RunAsync(async () =>
         {
@@ -34,15 +34,15 @@ public sealed class ArianaLabResources(
 
     [McpServerResource(
         UriTemplate = "arianalab://sample/{tagebuchnummer}/logs",
-        Name = "Probe Änderungsprotokoll",
+        Name = "Sample change log",
         MimeType = "application/json")]
     [Description(
-        "Lädt das Änderungsprotokoll zu einer Probe. Nur verwenden, wenn ausdrücklich gefragt wird, wer wann etwas an der Probe geändert hat; " +
-        "kann interne Auditdaten enthalten.")]
+        "Loads the change log for a sample. Use only when explicitly asked who changed something on the sample and when; " +
+        "may contain internal audit data.")]
     public Task<TextResourceContents> GetSampleLogs(string tagebuchnummer, CancellationToken cancellationToken)
         => McpResourceRunner.RunAsync(async () =>
         {
-            sensitiveDataGuard.EnsureEnabled("Probe-Logs");
+            sensitiveDataGuard.EnsureEnabled("sample logs");
             var decoded = ArianaLabUriHelper.DecodePathSegment(tagebuchnummer);
             var body = await sampleService.GetSampleLogsAsync(decoded, cancellationToken);
             return CreateJsonResource($"arianalab://sample/{tagebuchnummer}/logs", body);
@@ -50,15 +50,15 @@ public sealed class ArianaLabResources(
 
     [McpServerResource(
         UriTemplate = "arianalab://sample/{tagebuchnummer}/attachments",
-        Name = "Probe Anhänge",
+        Name = "Sample attachments",
         MimeType = "application/json")]
     [Description(
-        "Listet Anhänge zu einer Probe, z. B. Dokumente oder Bilder. Standardmäßig nur Metadaten; " +
-        "Inhalte nur laden, wenn der Nutzer ausdrücklich nach dem Anhang fragt.")]
+        "Lists attachments for a sample, for example documents or images. Metadata only by default; " +
+        "load content only when the user explicitly asks for the attachment.")]
     public Task<TextResourceContents> GetSampleAttachments(string tagebuchnummer, CancellationToken cancellationToken)
         => McpResourceRunner.RunAsync(async () =>
         {
-            sensitiveDataGuard.EnsureEnabled("Probe-Anhänge");
+            sensitiveDataGuard.EnsureEnabled("sample attachments");
             var decoded = ArianaLabUriHelper.DecodePathSegment(tagebuchnummer);
             var body = await sampleService.GetSampleAttachmentsAsync(decoded, cancellationToken);
             return CreateJsonResource($"arianalab://sample/{tagebuchnummer}/attachments", body);
@@ -66,10 +66,10 @@ public sealed class ArianaLabResources(
 
     [McpServerResource(
         UriTemplate = "arianalab://customer/{nummer}",
-        Name = "Kunde",
+        Name = "Customer",
         MimeType = "application/json")]
     [Description(
-        "Lädt den Kundenstammdatensatz zu einer Kundennummer. Kann Adressen, Ansprechpartner und weitere personenbezogene Daten enthalten.")]
+        "Loads the customer master record for a customer number. May contain addresses, contacts, and other personal data.")]
     public Task<TextResourceContents> GetCustomer(string nummer, CancellationToken cancellationToken)
         => McpResourceRunner.RunAsync(async () =>
         {
@@ -79,10 +79,10 @@ public sealed class ArianaLabResources(
 
     [McpServerResource(
         UriTemplate = "arianalab://analysis/{id}",
-        Name = "Analyse",
+        Name = "Analysis",
         MimeType = "application/json")]
     [Description(
-        "Lädt Informationen zu einer Analyse oder Untersuchung, z. B. Name, Beschreibung und mögliche Zuordnung zu Methoden.")]
+        "Loads information about an analysis or test, for example name, description, and possible method assignments.")]
     public Task<TextResourceContents> GetAnalysis(string id, CancellationToken cancellationToken)
         => McpResourceRunner.RunAsync(async () =>
         {
@@ -95,12 +95,12 @@ public sealed class ArianaLabResources(
         Name = "Customer Order Request",
         MimeType = "application/json")]
     [Description(
-        "Lädt einen Kundenauftrag / Customer Order Request. Nur verwenden, wenn der Nutzer ausdrücklich nach einem COR-Auftrag fragt; " +
-        "kann Rechnungs- und Zahlungsdaten enthalten.")]
+        "Loads a customer order / Customer Order Request. Use only when the user explicitly asks for a COR order; " +
+        "may contain invoice and payment data.")]
     public Task<TextResourceContents> GetCor(string corId, CancellationToken cancellationToken)
         => McpResourceRunner.RunAsync(async () =>
         {
-            sensitiveDataGuard.EnsureEnabled("COR-Details");
+            sensitiveDataGuard.EnsureEnabled("COR details");
             var decoded = ArianaLabUriHelper.DecodePathSegment(corId);
             var body = await corService.GetCorAsync(decoded, cancellationToken);
             return CreateJsonResource($"arianalab://cor/{corId}", body);
@@ -108,25 +108,25 @@ public sealed class ArianaLabResources(
 
     [McpServerResource(
         UriTemplate = "arianalab://invoice/{id}",
-        Name = "Rechnung",
+        Name = "Invoice",
         MimeType = "application/json")]
     [Description(
-        "Lädt eine Rechnung anhand der Rechnungsnummer. Nur verwenden, wenn der Nutzer ausdrücklich Rechnungsdaten benötigt; " +
-        "enthält abrechnungsrelevante Daten.")]
+        "Loads an invoice by invoice number. Use only when the user explicitly needs invoice data; " +
+        "contains billing-relevant data.")]
     public Task<TextResourceContents> GetInvoice(string id, CancellationToken cancellationToken)
         => McpResourceRunner.RunAsync(async () =>
         {
-            sensitiveDataGuard.EnsureEnabled("Rechnungsdetails");
+            sensitiveDataGuard.EnsureEnabled("invoice details");
             var body = await invoiceService.GetInvoiceAsync(id, cancellationToken);
             return CreateJsonResource($"arianalab://invoice/{id}", body);
         }, cancellationToken);
 
     [McpServerResource(
         UriTemplate = "arianalab://planning/{module}/{id}",
-        Name = "Planungsauftrag",
+        Name = "Planning order",
         MimeType = "application/json")]
     [Description(
-        "Lädt einen Planungs- oder Auftragsdatensatz aus einem angegebenen Modul, z. B. Probenanlage oder Kundenauftrag.")]
+        "Loads a planning or order record from a specified module, for example sample intake or customer orders.")]
     public Task<TextResourceContents> GetPlanningOrder(
         string module,
         string id,
@@ -141,6 +141,6 @@ public sealed class ArianaLabResources(
     {
         Uri = uri,
         MimeType = "application/json",
-        Text = body,
+        Text = JsonResponseCleaner.Clean(body),
     };
 }

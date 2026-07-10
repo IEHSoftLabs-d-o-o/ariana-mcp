@@ -13,37 +13,38 @@ builder.ConfigureAppSettings(argv.ToArray());
 builder.ConfigureLoggingSettings();
 
 builder.Services.AddAraianLabHttpClient(builder.Configuration);
+builder.Services.AddOpenApi();
 
 builder.Services
     .AddMcpServer(options =>
     {
         options.ServerInstructions =
             """
-            Lesender Zugriff auf ArianaLab (Labor-LIMS). Daten und Antworten sind auf Deutsch.
+            Read-only access to ArianaLab (labor LIMS). Data and responses are in German.
 
-            Typischer DAUS-Ablauf:
-            1. search_customers (Name/Nummer) oder search_samples (Tagebuchnummer, Kunde, Zeitraum) zum Finden
-            2. get_sample_short_info für einen schnellen Überblick zu einer Probe
-            3. customer_info_by_sample für Kundenkontext zur Probe
-            4. sample_results_by_id für konkrete Parameter und Messwerte
-            5. report_json_by_sample für Prüfberichtsinhalt und Beurteilungen
+            Typical DAUS workflow:
+            1. Use search_customers (name/number) or search_samples (lab journal number, customer, date range) to find records
+            2. Use get_sample_short_info for a quick sample overview
+            3. Use customer_info_by_sample for customer context for the sample
+            4. Use sample_results_by_id for specific parameters and measured values
+            5. Use report_json_by_sample for test report content and assessments
 
-            Proben-IDs haben das Format 'JJ-NNNNNNN' (z. B. '26-0318054'). Kundennummern sind numerisch (z. B. '14197').
-            Für Detaildaten einer bekannten Probe: get_sample oder Resource arianalab://sample/{tagebuchnummer}.
-            Für Kundenstammdaten: arianalab://customer/{nummer} oder customer_info_by_id.
+            Sample IDs use the format 'YY-NNNNNNN' (for example '26-0318054'). Customer numbers are numeric (for example '14197').
+            For details of a known sample: get_sample or resource arianalab://sample/{tagebuchnummer}.
+            For customer master data: arianalab://customer/{nummer} or customer_info_by_id.
 
-            Referenzdaten: get_public_analyses, get_methods, get_product_classes, list_lab_parameters, list_units,
+            Reference data: get_public_analyses, get_methods, get_product_classes, list_lab_parameters, list_units,
             list_product_groups, list_sample_groups, list_test_packages.
 
-            Aufträge: search_orders, get_order, search_customer_orders, get_customer_order, get_planning_orders.
+            Orders: search_orders, get_order, search_customer_orders, get_customer_order, get_planning_orders.
 
-            Diagnose: get_system_info prüft Erreichbarkeit und angemeldeten Benutzer.
+            Diagnostics: get_system_info checks reachability and the signed-in user.
 
-            Sensible Daten (Logs, Anhänge, Rechnungen, COR) sind standardmäßig gesperrt.
-            Nur bei ausdrücklichem Bedarf und mit AraianLab:EnableSensitiveData=true verwenden.
+            Sensitive data (logs, attachments, invoices, COR) is blocked by default.
+            Use only when explicitly needed and with AraianLab:EnableSensitiveData=true.
 
-            Batch-Tools (sample_by_id, customer_by_name, search_customers_batch) akzeptieren Listen;
-            fehlende Einträge brechen die gesamte Anfrage nicht ab.
+            Batch tools (sample_by_id, customer_by_name, search_customers_batch) accept lists;
+            missing entries do not fail the entire request.
             """;
     })
     .WithHttpTransport(o => o.Stateless = true)
@@ -65,6 +66,8 @@ app.MapGet("/", () =>
 });
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
+app.MapOpenApi("/openapi.json");
 app.MapMcp("/mcp");
 
 await app.RunAsync();

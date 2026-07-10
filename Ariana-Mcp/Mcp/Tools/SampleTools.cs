@@ -10,31 +10,31 @@ public sealed class SampleTools(SampleService sampleService, CustomerService cus
 {
     [McpServerTool(
         Name = "search_samples",
-        Title = "Proben suchen",
+        Title = "Search samples",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Sucht Laborproben nach Tagebuchnummer, Kunde, Kundenprobennummer, Probenbezeichnung, Zeitraum oder Status. " +
-        "Verwenden, wenn der Nutzer eine Probe finden möchte und die genaue Tagebuchnummer nicht sicher bekannt ist.")]
+        "Searches lab samples by lab journal number, customer, customer sample number, sample description, date range, or status. " +
+        "Use when the user wants to find a sample and the exact lab journal number is not known.")]
     public Task<string> SearchSamples(
-        [Description("Erweiterte EasyQuery-Suche als JSON oder Filterzeichenkette. Optional, wenn einfache Parameter genutzt werden.")]
+        [Description("Advanced EasyQuery search as JSON or a filter string. Optional when simple parameters are used.")]
         string? q = null,
-        [Description("Tagebuchnummer oder Teil davon, z. B. '26-0318054'.")]
+        [Description("Lab journal number or part of it, for example '26-0318054'.")]
         string? tagebuchnummer = null,
-        [Description("Kundenname oder Teil des Auftraggebers, z. B. 'Müller'.")]
+        [Description("Customer name or part of the requester name, for example 'Müller'.")]
         string? kunde = null,
-        [Description("Kundenprobennummer oder Teil davon.")]
+        [Description("Customer sample number or part of it.")]
         string? kundenprobennummer = null,
-        [Description("Probenbezeichnung oder Teil davon.")]
+        [Description("Sample description or part of it.")]
         string? probenbezeichnung = null,
-        [Description("Eingangsdatum von (z. B. '2026-01-01').")]
+        [Description("Received date from, for example '2026-01-01'.")]
         string? von = null,
-        [Description("Eingangsdatum bis (z. B. '2026-03-31').")]
+        [Description("Received date through, for example '2026-03-31'.")]
         string? bis = null,
-        [Description("Status, z. B. 'fertiggemeldet', 'beurteilt', 'storniert'.")]
+        [Description("Status, for example 'fertiggemeldet', 'beurteilt', or 'storniert'.")]
         string? status = null,
-        [Description("Maximale Trefferanzahl (1-50, Standard 25).")]
+        [Description("Maximum number of matches (1-50, default 25).")]
         int limit = 25,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -45,15 +45,15 @@ public sealed class SampleTools(SampleService sampleService, CustomerService cus
 
     [McpServerTool(
         Name = "get_sample",
-        Title = "Probe laden",
+        Title = "Load sample",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Lädt die vollständigen Daten einer Probe anhand der Tagebuchnummer. " +
-        "Nur verwenden, wenn Detaildaten gebraucht werden; für einen schnellen Überblick besser get_sample_short_info verwenden.")]
+        "Loads the full data for a sample by lab journal number. " +
+        "Use only when detailed data is needed; prefer get_sample_short_info for a quick overview.")]
     public Task<string> GetSample(
-        [Description("Tagebuchnummer der Probe, z. B. '26-0318054'.")]
+        [Description("Sample lab journal number, for example '26-0318054'.")]
         string tagebuchnummer,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -62,14 +62,14 @@ public sealed class SampleTools(SampleService sampleService, CustomerService cus
 
     [McpServerTool(
         Name = "sample_by_id",
-        Title = "Probe nach ID (Alias)",
+        Title = "Sample by ID (alias)",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Lädt eine oder mehrere Laborproben anhand ihrer Tagebuchnummern. Kompatibilitätsalias zu get_sample mit Batch-Unterstützung.")]
+        "Loads one or more lab samples by their lab journal numbers. Compatibility alias for get_sample with batch support.")]
     public Task<string> SampleById(
-        [Description("Liste von Tagebuchnummern, z. B. ['26-0318054', '26-0318055'].")]
+        [Description("List of lab journal numbers, for example ['26-0318054', '26-0318055'].")]
         IReadOnlyList<string> sampleIds,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -78,15 +78,15 @@ public sealed class SampleTools(SampleService sampleService, CustomerService cus
 
     [McpServerTool(
         Name = "get_sample_short_info",
-        Title = "Probe Kurzübersicht",
+        Title = "Sample quick overview",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Gibt eine kurze Übersicht zu einer Probe zurück, z. B. Status, Verknüpfungen und wichtige Kopfdaten. " +
-        "Dieses Tool bevorzugen, wenn der Nutzer allgemein fragt, was mit einer Probe ist.")]
+        "Returns a brief overview for a sample, for example status, links, and important header data. " +
+        "Prefer this tool when the user asks generally what is happening with a sample.")]
     public Task<string> GetSampleShortInfo(
-        [Description("Tagebuchnummer der Probe, z. B. '26-0318054'.")]
+        [Description("Sample lab journal number, for example '26-0318054'.")]
         string tagebuchnummer,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -95,15 +95,15 @@ public sealed class SampleTools(SampleService sampleService, CustomerService cus
 
     [McpServerTool(
         Name = "report_json_by_sample",
-        Title = "Prüfbericht JSON",
+        Title = "Test report JSON",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Lädt den strukturierten Prüfbericht zu einer Probe. " +
-        "Verwenden, wenn der Nutzer Ergebnisse, Beurteilungen, Prüfberichtsdaten oder den Berichtsinhalt verstehen möchte.")]
+        "Loads the structured test report for a sample. " +
+        "Use when the user wants to understand results, assessments, report data, or report content.")]
     public Task<string> ReportJsonBySample(
-        [Description("Tagebuchnummer der Probe, z. B. '26-0318054'.")]
+        [Description("Sample lab journal number, for example '26-0318054'.")]
         string tagebuchnummer,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -112,15 +112,15 @@ public sealed class SampleTools(SampleService sampleService, CustomerService cus
 
     [McpServerTool(
         Name = "customer_info_by_sample",
-        Title = "Kunde zur Probe",
+        Title = "Customer for sample",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Lädt Kundeninformationen zum Auftraggeber einer Probe. " +
-        "Verwenden, wenn der Nutzer zu einer Probe wissen möchte, welcher Kunde dazugehört oder welche Kundenhinweise gelten.")]
+        "Loads customer information for a sample's requester. " +
+        "Use when the user wants to know which customer belongs to a sample or which customer notes apply.")]
     public Task<string> CustomerInfoBySample(
-        [Description("Tagebuchnummer der Probe, z. B. '26-0318054'.")]
+        [Description("Sample lab journal number, for example '26-0318054'.")]
         string tagebuchnummer,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -129,15 +129,15 @@ public sealed class SampleTools(SampleService sampleService, CustomerService cus
 
     [McpServerTool(
         Name = "sample_results_by_id",
-        Title = "Probenergebnisse laden",
+        Title = "Load sample results",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Lädt die Bearbeitungs- und Ergebnisdaten einer Probe, inklusive Parameter, Methoden, Messwerte, Ergebnisse und Unterproben. " +
-        "Verwenden, wenn der Nutzer konkrete Analyseergebnisse oder Parameter sehen möchte.")]
+        "Loads processing and result data for a sample, including parameters, methods, measured values, results, and subsamples. " +
+        "Use when the user wants to see specific analysis results or parameters.")]
     public Task<string> SampleResultsById(
-        [Description("Tagebuchnummer der Probe, z. B. '26-0318054'.")]
+        [Description("Sample lab journal number, for example '26-0318054'.")]
         string tagebuchnummer,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -146,21 +146,21 @@ public sealed class SampleTools(SampleService sampleService, CustomerService cus
 
     [McpServerTool(
         Name = "get_sample_logs",
-        Title = "Probe Änderungsprotokoll",
+        Title = "Sample change log",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Lädt das Änderungsprotokoll zu einer Probe. Nur verwenden, wenn ausdrücklich gefragt wird, wer wann etwas geändert hat; " +
-        "kann interne Auditdaten enthalten. Erfordert AraianLab:EnableSensitiveData=true.")]
+        "Loads the change log for a sample. Use only when explicitly asked who changed something and when; " +
+        "may contain internal audit data. Requires AraianLab:EnableSensitiveData=true.")]
     public Task<string> GetSampleLogs(
-        [Description("Tagebuchnummer der Probe, z. B. '26-0318054'.")]
+        [Description("Sample lab journal number, for example '26-0318054'.")]
         string tagebuchnummer,
         SensitiveDataTools sensitiveDataTools,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(async () =>
         {
-            sensitiveDataTools.EnsureSensitiveDataEnabled("Probe-Logs");
+            sensitiveDataTools.EnsureSensitiveDataEnabled("sample logs");
             return await sampleService.GetSampleLogsAsync(tagebuchnummer, cancellationToken);
         }, cancellationToken);
 }

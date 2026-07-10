@@ -10,18 +10,18 @@ public sealed class CustomerTools(CustomerService customerService)
 {
     [McpServerTool(
         Name = "search_customers",
-        Title = "Kunden suchen",
+        Title = "Search customers",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Sucht Kunden nach Name oder Kundennummer. Verwenden, wenn der Nutzer einen Kunden nur ungefähr benennt oder die Kundennummer nicht kennt.")]
+        "Searches customers by name or customer number. Use when the user names a customer approximately or does not know the customer number.")]
     public Task<string> SearchCustomers(
-        [Description("Erweiterte EasyQuery-Suche als JSON. Optional, wenn 'name' angegeben ist.")]
+        [Description("Advanced EasyQuery search as JSON. Optional when 'name' is provided.")]
         string? q = null,
-        [Description("Teil des Kundennamens oder der Kundennummer, z. B. 'Müller' oder '14197'. Mindestens 2 Zeichen.")]
+        [Description("Part of the customer name or customer number, for example 'Müller' or '14197'. At least 2 characters.")]
         string? name = null,
-        [Description("Maximale Trefferanzahl (1-50, Standard 25).")]
+        [Description("Maximum number of matches (1-50, default 25).")]
         int limit = 25,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -30,17 +30,17 @@ public sealed class CustomerTools(CustomerService customerService)
 
     [McpServerTool(
         Name = "search_customers_batch",
-        Title = "Kunden Batch-Suche",
+        Title = "Batch customer search",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Sucht Kunden anhand mehrerer Suchbegriffe und gibt pro Begriff eine kompakte Trefferliste zurück. " +
-        "Fehlende Einträge brechen die gesamte Anfrage nicht ab.")]
+        "Searches customers by multiple search terms and returns a compact match list for each term. " +
+        "Missing entries do not fail the entire request.")]
     public Task<string> SearchCustomersBatch(
-        [Description("Liste von Teilnamen oder Teil-Kundennummern, z. B. ['Müller', '1419'].")]
+        [Description("List of partial names or partial customer numbers, for example ['Müller', '1419'].")]
         IReadOnlyList<string> searches,
-        [Description("Maximale Treffer pro Suchbegriff (1-50, Standard 25).")]
+        [Description("Maximum matches per search term (1-50, default 25).")]
         int limit = 25,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -49,15 +49,15 @@ public sealed class CustomerTools(CustomerService customerService)
 
     [McpServerTool(
         Name = "customer_by_name",
-        Title = "Kunde nach exaktem Namen",
+        Title = "Customer by exact name",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Sucht einen oder mehrere Kunden anhand exakter Namen und gibt pro Name das vollständige Kunden-JSON zurück. " +
-        "Erfordert exakt passende Namen; bei Teilnamen bitte search_customers verwenden.")]
+        "Searches for one or more customers by exact names and returns the full customer JSON for each name. " +
+        "Requires exact matching names; use search_customers for partial names.")]
     public Task<string> CustomerByName(
-        [Description("Liste exakter Kundennamen, z. B. ['Firma GmbH', 'Labor AG'].")]
+        [Description("List of exact customer names, for example ['Firma GmbH', 'Labor AG'].")]
         IReadOnlyList<string> names,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -66,15 +66,15 @@ public sealed class CustomerTools(CustomerService customerService)
 
     [McpServerTool(
         Name = "customer_info_by_id",
-        Title = "Kundeninformationen nach ID",
+        Title = "Customer information by ID",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Gibt detaillierte Kundeninformationen zu einer oder mehreren Kundennummern zurück. " +
-        "Kann Adressen, Ansprechpartner und weitere personenbezogene Daten enthalten.")]
+        "Returns detailed customer information for one or more customer numbers. " +
+        "May contain addresses, contacts, and other personal data.")]
     public Task<string> CustomerInfoById(
-        [Description("Liste von Kundennummern, z. B. ['14197', '14198'].")]
+        [Description("List of customer numbers, for example ['14197', '14198'].")]
         IReadOnlyList<string> customerIds,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(

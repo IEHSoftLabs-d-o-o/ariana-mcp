@@ -10,16 +10,16 @@ public sealed class OperationsTools(OperationsService operationsService)
 {
     [McpServerTool(
         Name = "search_orders",
-        Title = "Interne Aufträge suchen",
+        Title = "Search internal orders",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Sucht interne Aufträge aus der Probenanlage. Verwenden, wenn der Nutzer wissen möchte, aus welchem Auftrag eine Probe entstanden ist oder welche Aufträge offen/aktiviert sind.")]
+        "Searches internal orders from sample intake. Use when the user wants to know which order created a sample or which orders are open or active.")]
     public Task<string> SearchOrders(
-        [Description("Erweiterte Suche für Aufträge. Beispiel: Suche nach Auftraggeber, Status oder Probenbezeichnung, wenn ArianaLab-Suchkriterien bekannt sind.")]
+        [Description("Advanced search for orders. Example: search by requester, status, or sample description when ArianaLab search criteria are known.")]
         string? q = null,
-        [Description("Maximale Anzahl Treffer (1-100, Standard 25). Beispiel: 25.")]
+        [Description("Maximum number of matches (1-100, default 25). Example: 25.")]
         int limit = 25,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -28,13 +28,13 @@ public sealed class OperationsTools(OperationsService operationsService)
 
     [McpServerTool(
         Name = "get_order",
-        Title = "Internen Auftrag laden",
+        Title = "Load internal order",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
-    [Description("Lädt einen internen Auftrag aus der Probenanlage. Verwenden, wenn eine konkrete Auftrags-ID bekannt ist.")]
+    [Description("Loads an internal order from sample intake. Use when a specific order ID is known.")]
     public Task<string> GetOrder(
-        [Description("Auftrags-ID aus ArianaLab, z. B. eine ObjectId aus einem Suchtreffer.")]
+        [Description("Order ID from ArianaLab, for example an ObjectId from a search result.")]
         string id,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -43,16 +43,16 @@ public sealed class OperationsTools(OperationsService operationsService)
 
     [McpServerTool(
         Name = "search_customer_orders",
-        Title = "Kundenaufträge suchen",
+        Title = "Search customer orders",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Sucht Kundenaufträge, die von Kunden oder Importprofilen kommen. Verwenden, wenn der Nutzer nach einer Kundenauftragsnummer, EO-Nummer oder importierten Beauftragung fragt.")]
+        "Searches customer orders that originate from customers or import profiles. Use when the user asks for a customer order number, EO number, or imported request.")]
     public Task<string> SearchCustomerOrders(
-        [Description("Erweiterte Suche für Kundenaufträge. Beispiel: Suche nach Kundenauftragsnummer, EO-Nummer, Auftraggeber oder Status.")]
+        [Description("Advanced search for customer orders. Example: search by customer order number, EO number, requester, or status.")]
         string? q = null,
-        [Description("Maximale Anzahl Treffer (1-100, Standard 25). Beispiel: 25.")]
+        [Description("Maximum number of matches (1-100, default 25). Example: 25.")]
         int limit = 25,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -61,13 +61,13 @@ public sealed class OperationsTools(OperationsService operationsService)
 
     [McpServerTool(
         Name = "get_customer_order",
-        Title = "Kundenauftrag laden",
+        Title = "Load customer order",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
-    [Description("Lädt einen Kundenauftrag. Verwenden, wenn eine konkrete Kundenauftrags-ID aus ArianaLab bekannt ist.")]
+    [Description("Loads a customer order. Use when a specific customer order ID from ArianaLab is known.")]
     public Task<string> GetCustomerOrder(
-        [Description("Kundenauftrags-ID aus ArianaLab, z. B. eine ObjectId aus einem Suchtreffer.")]
+        [Description("Customer order ID from ArianaLab, for example an ObjectId from a search result.")]
         string id,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -76,18 +76,18 @@ public sealed class OperationsTools(OperationsService operationsService)
 
     [McpServerTool(
         Name = "get_planning_orders",
-        Title = "Planungsdaten suchen",
+        Title = "Search planning data",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Sucht Planungs- oder Auftragsdaten in einem angegebenen Modul. Verwenden, wenn der Nutzer allgemein nach Planung, Probenanlage oder Kundenaufträgen fragt und das Modul angegeben werden kann.")]
+        "Searches planning or order data in a specified module. Use when the user asks generally about planning, sample intake, or customer orders and the module can be specified.")]
     public Task<string> GetPlanningOrders(
-        [Description("Planungsmodul: 'auftraege' für interne Aufträge oder 'kundenauftraege' für Kundenaufträge. Beispiel: 'auftraege'.")]
+        [Description("Planning module: 'orders' for internal orders or 'customer-orders' for customer orders. German aliases 'auftraege' and 'kundenauftraege' are also accepted.")]
         string module,
-        [Description("Erweiterte Suche für das gewählte Modul, wenn ArianaLab-Suchkriterien bekannt sind.")]
+        [Description("Advanced search for the selected module when ArianaLab search criteria are known.")]
         string? q = null,
-        [Description("Maximale Anzahl Treffer (1-100, Standard 25). Beispiel: 25.")]
+        [Description("Maximum number of matches (1-100, default 25). Example: 25.")]
         int limit = 25,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -96,16 +96,16 @@ public sealed class OperationsTools(OperationsService operationsService)
 
     [McpServerTool(
         Name = "get_system_info",
-        Title = "ArianaLab-Verbindung prüfen",
+        Title = "Check ArianaLab connection",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Prüft, ob ArianaLab erreichbar ist und mit welchem Benutzer der MCP verbunden ist. Verwenden zur Diagnose, wenn Tools nicht funktionieren oder Berechtigungen unklar sind.")]
+        "Checks whether ArianaLab is reachable and which user the MCP is connected as. Use for diagnosis when tools do not work or permissions are unclear.")]
     public Task<string> GetSystemInfo(
-        [Description("Wenn true, werden zusätzlich Benutzerrechte/Claims geladen. Nur bei Berechtigungsfragen verwenden.")]
+        [Description("When true, also loads user permissions/claims. Use only for permission questions.")]
         bool includeClaims = false,
-        [Description("Wenn true, wird zusätzlich KeepAlive ausgeführt. Nur verwenden, wenn ausdrücklich eine Serverdiagnose gewünscht ist.")]
+        [Description("When true, also runs KeepAlive. Use only when server diagnostics are explicitly requested.")]
         bool includeKeepAlive = false,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -114,18 +114,18 @@ public sealed class OperationsTools(OperationsService operationsService)
 
     [McpServerTool(
         Name = "search_cor",
-        Title = "COR-Aufträge suchen",
+        Title = "Search COR orders",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Sucht Customer Order Requests (COR). Nur verwenden, wenn der Nutzer ausdrücklich nach COR, Kundenbestellung, Ausführungsauftrag oder Gateway-Auftrag fragt; kann Rechnungs- und Zahlungsdaten enthalten.")]
+        "Searches Customer Order Requests (COR). Use only when the user explicitly asks for COR, customer orders, execution orders, or gateway orders; may contain invoice and payment data.")]
     public Task<string> SearchCor(
-        [Description("Erweiterte Suche für COR-Aufträge. Beispiel: Suchkriterien zu Kunde, Status oder Auftragsnummer.")]
+        [Description("Advanced search for COR orders. Example: search criteria for customer, status, or order number.")]
         string? q = null,
-        [Description("Muss true sein, weil COR-Aufträge sensible Kunden-, Auftrags-, Rechnungs- oder Zahlungsdaten enthalten können.")]
+        [Description("Must be true because COR orders may contain sensitive customer, order, invoice, or payment data.")]
         bool includeSensitiveOrderData = false,
-        [Description("Maximale Anzahl Treffer (1-100, Standard 25). Beispiel: 25.")]
+        [Description("Maximum number of matches (1-100, default 25). Example: 25.")]
         int limit = 25,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -134,16 +134,16 @@ public sealed class OperationsTools(OperationsService operationsService)
 
     [McpServerTool(
         Name = "get_cor",
-        Title = "COR-Auftrag laden",
+        Title = "Load COR order",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Lädt einen Customer Order Request (COR). Nur verwenden, wenn der Nutzer ausdrücklich nach einem konkreten COR-Auftrag fragt; kann Rechnungs- und Zahlungsdaten enthalten.")]
+        "Loads a Customer Order Request (COR). Use only when the user explicitly asks for a specific COR order; may contain invoice and payment data.")]
     public Task<string> GetCor(
-        [Description("COR-ID, z. B. aus einem Suchtreffer.")]
+        [Description("COR ID, for example from a search result.")]
         string corId,
-        [Description("Muss true sein, weil ein COR-Auftrag sensible Kunden-, Auftrags-, Rechnungs- oder Zahlungsdaten enthalten kann.")]
+        [Description("Must be true because a COR order may contain sensitive customer, order, invoice, or payment data.")]
         bool includeSensitiveOrderData = false,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -152,16 +152,16 @@ public sealed class OperationsTools(OperationsService operationsService)
 
     [McpServerTool(
         Name = "validate_cor_gateway",
-        Title = "COR-Gateway-Auftrag prüfen",
+        Title = "Validate COR gateway order",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Prüft einen COR-Gateway-Auftrag auf fachliche Plausibilität, ohne ihn zu speichern. Nur verwenden, wenn der Nutzer ausdrücklich eine COR-Validierung möchte.")]
+        "Checks a COR gateway order for business plausibility without saving it. Use only when the user explicitly wants COR validation.")]
     public Task<string> ValidateCorGateway(
-        [Description("COR-Gateway-Datensatz als JSON. Kann Kunden-, Auftrags-, Rechnungs- oder Zahlungsdaten enthalten.")]
+        [Description("COR gateway record as JSON. May contain customer, order, invoice, or payment data.")]
         string dtoJson,
-        [Description("Muss true sein, weil der COR-Datensatz sensible Kunden-, Auftrags-, Rechnungs- oder Zahlungsdaten enthalten kann.")]
+        [Description("Must be true because the COR record may contain sensitive customer, order, invoice, or payment data.")]
         bool includeSensitiveOrderData = false,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -170,18 +170,18 @@ public sealed class OperationsTools(OperationsService operationsService)
 
     [McpServerTool(
         Name = "search_invoices",
-        Title = "Rechnungen suchen",
+        Title = "Search invoices",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Sucht Rechnungen. Nur verwenden, wenn der Nutzer ausdrücklich nach Rechnung, Rechnungsnummer, Abrechnung oder offenen Rechnungsdaten fragt; enthält sensible Abrechnungsdaten.")]
+        "Searches invoices. Use only when the user explicitly asks for an invoice, invoice number, billing, or open invoice data; contains sensitive billing data.")]
     public Task<string> SearchInvoices(
-        [Description("Erweiterte Suche für Rechnungen. Beispiel: Suchkriterien zu Rechnungsnummer, Kunde, Status oder Tagebuchnummer.")]
+        [Description("Advanced search for invoices. Example: search criteria for invoice number, customer, status, or lab journal number.")]
         string? q = null,
-        [Description("Muss true sein, weil Rechnungen sensible Abrechnungsdaten enthalten.")]
+        [Description("Must be true because invoices contain sensitive billing data.")]
         bool includeSensitiveBillingData = false,
-        [Description("Maximale Anzahl Treffer (1-100, Standard 25). Beispiel: 25.")]
+        [Description("Maximum number of matches (1-100, default 25). Example: 25.")]
         int limit = 25,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
@@ -190,16 +190,16 @@ public sealed class OperationsTools(OperationsService operationsService)
 
     [McpServerTool(
         Name = "get_invoice",
-        Title = "Rechnung laden",
+        Title = "Load invoice",
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Lädt eine Rechnung. Nur verwenden, wenn der Nutzer ausdrücklich Rechnungsdaten benötigt; enthält sensible Abrechnungsdaten.")]
+        "Loads an invoice. Use only when the user explicitly needs invoice data; contains sensitive billing data.")]
     public Task<string> GetInvoice(
-        [Description("Rechnungsnummer, z. B. '2026-000123'.")]
+        [Description("Invoice number, for example '2026-000123'.")]
         string id,
-        [Description("Muss true sein, weil eine Rechnung sensible Abrechnungsdaten enthält.")]
+        [Description("Must be true because an invoice contains sensitive billing data.")]
         bool includeSensitiveBillingData = false,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(

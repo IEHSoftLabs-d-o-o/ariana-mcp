@@ -40,7 +40,7 @@ public sealed class OperationsService(IHttpClientFactory httpClientFactory)
             "kundenauftraege" or "kundenaufträge" or "customer-orders" or "kunden" =>
                 "Rest/Opd/Probenanlage/Kundenauftraege",
             _ => throw new ArianaLabException(
-                "Unbekanntes Planungsmodul. Bitte 'auftraege' oder 'kundenauftraege' verwenden."),
+                "Unknown planning module. Please use 'orders' or 'customer-orders'. German aliases 'auftraege' and 'kundenauftraege' are also accepted."),
         };
 
         return SearchHalAsync(route, q, limit, cancellationToken);
@@ -71,8 +71,8 @@ public sealed class OperationsService(IHttpClientFactory httpClientFactory)
             claims = claims is null ? null : TryParseJson(claims),
             keepAlive = keepAlive is null ? null : TryParseJson(keepAlive),
             hinweis = includeKeepAlive
-                ? "KeepAlive wurde ausdrücklich ausgeführt."
-                : "KeepAlive wurde nicht ausgeführt, weil es auf dem ArianaLab-Server zusätzliche Arbeit auslösen kann.",
+                ? "KeepAlive was explicitly executed."
+                : "KeepAlive was not executed because it can trigger additional work on the ArianaLab server.",
         });
     }
 
@@ -82,7 +82,7 @@ public sealed class OperationsService(IHttpClientFactory httpClientFactory)
         int limit = DefaultLimit,
         CancellationToken cancellationToken = default)
     {
-        EnsureSensitive(includeSensitiveOrderData, "COR-Aufträge können Kunden-, Auftrags-, Rechnungs- und Zahlungsdaten enthalten.");
+        EnsureSensitive(includeSensitiveOrderData, "COR orders may contain customer, order, invoice, and payment data.");
         return SearchHalAsync("Rest/Cors/CustomerOrderRequests", q, limit, cancellationToken);
     }
 
@@ -91,7 +91,7 @@ public sealed class OperationsService(IHttpClientFactory httpClientFactory)
         bool includeSensitiveOrderData,
         CancellationToken cancellationToken = default)
     {
-        EnsureSensitive(includeSensitiveOrderData, "Ein COR-Auftrag kann Kunden-, Auftrags-, Rechnungs- und Zahlungsdaten enthalten.");
+        EnsureSensitive(includeSensitiveOrderData, "A COR order may contain customer, order, invoice, and payment data.");
         return GetRequiredAsync(
             $"Rest/Cors/CustomerOrderRequests/{Uri.EscapeDataString(RequireText(corId, "Die COR-ID darf nicht leer sein."))}",
             $"Kein COR-Auftrag mit der ID '{corId}' gefunden.",
@@ -103,7 +103,7 @@ public sealed class OperationsService(IHttpClientFactory httpClientFactory)
         bool includeSensitiveOrderData,
         CancellationToken cancellationToken = default)
     {
-        EnsureSensitive(includeSensitiveOrderData, "Eine COR-Validierung kann Kunden-, Auftrags-, Rechnungs- und Zahlungsdaten enthalten.");
+        EnsureSensitive(includeSensitiveOrderData, "COR validation may contain customer, order, invoice, and payment data.");
 
         if (string.IsNullOrWhiteSpace(dtoJson))
             throw new ArianaLabException("Der COR-Datensatz zur Prüfung darf nicht leer sein.");
@@ -118,7 +118,7 @@ public sealed class OperationsService(IHttpClientFactory httpClientFactory)
         int limit = DefaultLimit,
         CancellationToken cancellationToken = default)
     {
-        EnsureSensitive(includeSensitiveBillingData, "Rechnungen enthalten sensible Abrechnungsdaten.");
+        EnsureSensitive(includeSensitiveBillingData, "Invoices contain sensitive billing data.");
         return SearchHalAsync("Rest/Opd/Rechnungserstellung/Rechnungen", q, limit, cancellationToken);
     }
 
@@ -127,7 +127,7 @@ public sealed class OperationsService(IHttpClientFactory httpClientFactory)
         bool includeSensitiveBillingData,
         CancellationToken cancellationToken = default)
     {
-        EnsureSensitive(includeSensitiveBillingData, "Eine Rechnung enthält sensible Abrechnungsdaten.");
+        EnsureSensitive(includeSensitiveBillingData, "An invoice contains sensitive billing data.");
         return GetRequiredAsync(
             $"Rest/Opd/Rechnungserstellung/Rechnungen/{Uri.EscapeDataString(RequireText(id, "Die Rechnungsnummer darf nicht leer sein."))}",
             $"Keine Rechnung mit der Nummer '{id}' gefunden.",
@@ -144,7 +144,7 @@ public sealed class OperationsService(IHttpClientFactory httpClientFactory)
             "auftraege" or "aufträge" or "orders" => "Rest/Opd/Probenanlage/Auftraege",
             "kundenauftraege" or "kundenaufträge" or "customer-orders" => "Rest/Opd/Probenanlage/Kundenauftraege",
             _ => throw new ArianaLabException(
-                "Unbekanntes Planungsmodul. Bitte 'auftraege' oder 'kundenauftraege' verwenden."),
+                "Unknown planning module. Please use 'orders' or 'customer-orders'. German aliases 'auftraege' and 'kundenauftraege' are also accepted."),
         };
 
         return GetRequiredAsync(
@@ -186,7 +186,7 @@ public sealed class OperationsService(IHttpClientFactory httpClientFactory)
         if (!confirmed)
         {
             throw new ArianaLabException(
-                $"{reason} Bitte dieses Tool nur verwenden, wenn der Nutzer ausdrücklich danach gefragt hat, und den Parameter zur Bestätigung auf true setzen.");
+                $"{reason} Use this tool only when the user explicitly asked for it, and set the confirmation parameter to true.");
         }
     }
 

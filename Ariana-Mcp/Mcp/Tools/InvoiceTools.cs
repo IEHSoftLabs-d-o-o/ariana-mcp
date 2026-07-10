@@ -8,30 +8,30 @@ namespace Ariana_Mcp.Mcp.Tools;
 [McpServerToolType]
 public sealed class InvoiceTools(InvoiceService invoiceService, SensitiveDataTools sensitiveDataTools)
 {
-    [McpServerTool(Name = "search_invoices", Title = "Rechnungen suchen", ReadOnly = true, Idempotent = true)]
+    [McpServerTool(Name = "search_invoices", Title = "Search invoices", ReadOnly = true, Idempotent = true)]
     [Description(
-        "Sucht Rechnungen. Nur verwenden, wenn der Nutzer ausdrücklich nach Rechnung, Rechnungsnummer oder Abrechnung fragt; " +
-        "enthält sensible Abrechnungsdaten. Erfordert AraianLab:EnableSensitiveData=true.")]
+        "Searches invoices. Use only when the user explicitly asks for an invoice, invoice number, or billing; " +
+        "contains sensitive billing data. Requires AraianLab:EnableSensitiveData=true.")]
     public Task<string> SearchInvoices(
-        [Description("Erweiterte EasyQuery-Suche als JSON. Optional.")]
+        [Description("Advanced EasyQuery search as JSON. Optional.")]
         string? q = null,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(async () =>
         {
-            sensitiveDataTools.EnsureSensitiveDataEnabled("Rechnungssuche");
+            sensitiveDataTools.EnsureSensitiveDataEnabled("invoice search");
             return await invoiceService.SearchInvoicesAsync(q, cancellationToken);
         }, cancellationToken);
 
-    [McpServerTool(Name = "get_invoice", Title = "Rechnung laden", ReadOnly = true, Idempotent = true)]
+    [McpServerTool(Name = "get_invoice", Title = "Load invoice", ReadOnly = true, Idempotent = true)]
     [Description(
-        "Lädt eine Rechnung anhand der Rechnungsnummer. Enthält abrechnungsrelevante Daten. Erfordert AraianLab:EnableSensitiveData=true.")]
+        "Loads an invoice by invoice number. Contains billing-relevant data. Requires AraianLab:EnableSensitiveData=true.")]
     public Task<string> GetInvoice(
-        [Description("Rechnungsnummer oder ID.")]
+        [Description("Invoice number or ID.")]
         string id,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(async () =>
         {
-            sensitiveDataTools.EnsureSensitiveDataEnabled("Rechnungsdetails");
+            sensitiveDataTools.EnsureSensitiveDataEnabled("invoice details");
             return await invoiceService.GetInvoiceAsync(id, cancellationToken);
         }, cancellationToken);
 }

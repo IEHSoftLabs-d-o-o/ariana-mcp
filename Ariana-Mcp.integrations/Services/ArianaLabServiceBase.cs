@@ -98,13 +98,13 @@ public abstract class ArianaLabServiceBase(IHttpClientFactory httpClientFactory)
         return statusCode switch
         {
             HttpStatusCode.NotFound => new ArianaLabException(
-                notFoundMessage ?? $"Ich habe die angefragten ArianaLab-Daten nicht gefunden: {requestUri}",
+                notFoundMessage ?? $"The requested ArianaLab data was not found: {requestUri}",
                 statusCode),
             HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => new ArianaLabException(
-                "ArianaLab hat den Zugriff abgelehnt. Bitte prüfen, ob der MCP-Benutzer angemeldet ist und die nötige Berechtigung für diese Daten hat.",
+                "ArianaLab denied access. Check whether the MCP user is signed in and has the required permission for this data.",
                 statusCode),
             _ => new ArianaLabException(
-                $"ArianaLab konnte die Anfrage gerade nicht beantworten (HTTP {(int)statusCode} {statusCode}). Antwort: {TruncateBody(body)}",
+                $"ArianaLab could not answer the request right now (HTTP {(int)statusCode} {statusCode}). Response: {TruncateBody(body)}",
                 statusCode),
         };
     }
@@ -112,7 +112,7 @@ public abstract class ArianaLabServiceBase(IHttpClientFactory httpClientFactory)
     private static string TruncateBody(string body, int maxLength = 500)
     {
         if (string.IsNullOrWhiteSpace(body))
-            return "(leerer Antworttext)";
+            return "(empty response body)";
 
         var trimmed = body.Trim();
         return trimmed.Length <= maxLength ? trimmed : $"{trimmed[..maxLength]}...";

@@ -8,61 +8,61 @@ namespace Ariana_Mcp.Mcp.Tools;
 [McpServerToolType]
 public sealed class OrderTools(OrderService orderService)
 {
-    [McpServerTool(Name = "search_orders", Title = "Interne Aufträge suchen", ReadOnly = true, Idempotent = true)]
+    [McpServerTool(Name = "search_orders", Title = "Search internal orders", ReadOnly = true, Idempotent = true)]
     [Description(
-        "Sucht interne Aufträge aus der Probenanlage. Verwenden, wenn der Nutzer wissen möchte, aus welchem Auftrag eine Probe entstanden ist oder welche Aufträge offen/aktiviert sind.")]
+        "Searches internal orders from sample intake. Use when the user wants to know which order created a sample or which orders are open or active.")]
     public Task<string> SearchOrders(
-        [Description("Erweiterte EasyQuery-Suche als JSON. Optional.")]
+        [Description("Advanced EasyQuery search as JSON. Optional.")]
         string? q = null,
-        [Description("Maximale Trefferanzahl (1-50, Standard 25).")]
+        [Description("Maximum number of matches (1-50, default 25).")]
         int limit = 25,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
             () => orderService.SearchOrdersAsync(q, limit, cancellationToken),
             cancellationToken);
 
-    [McpServerTool(Name = "get_order", Title = "Internen Auftrag laden", ReadOnly = true, Idempotent = true)]
-    [Description("Lädt einen internen Auftrag aus der Probenanlage anhand der Auftrags-ID.")]
+    [McpServerTool(Name = "get_order", Title = "Load internal order", ReadOnly = true, Idempotent = true)]
+    [Description("Loads an internal order from sample intake by order ID.")]
     public Task<string> GetOrder(
-        [Description("Auftrags-ID aus der Probenanlage.")]
+        [Description("Order ID from sample intake.")]
         string id,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
             () => orderService.GetOrderAsync(id, cancellationToken),
             cancellationToken);
 
-    [McpServerTool(Name = "search_customer_orders", Title = "Kundenaufträge suchen", ReadOnly = true, Idempotent = true)]
+    [McpServerTool(Name = "search_customer_orders", Title = "Search customer orders", ReadOnly = true, Idempotent = true)]
     [Description(
-        "Sucht Kundenaufträge, die von Kunden oder Importprofilen kommen. Verwenden bei Kundenauftragsnummer, EO-Nummer oder importierter Beauftragung.")]
+        "Searches customer orders that originate from customers or import profiles. Use for customer order numbers, EO numbers, or imported requests.")]
     public Task<string> SearchCustomerOrders(
-        [Description("Erweiterte EasyQuery-Suche als JSON. Optional.")]
+        [Description("Advanced EasyQuery search as JSON. Optional.")]
         string? q = null,
-        [Description("Maximale Trefferanzahl (1-50, Standard 25).")]
+        [Description("Maximum number of matches (1-50, default 25).")]
         int limit = 25,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
             () => orderService.SearchCustomerOrdersAsync(q, limit, cancellationToken),
             cancellationToken);
 
-    [McpServerTool(Name = "get_customer_order", Title = "Kundenauftrag laden", ReadOnly = true, Idempotent = true)]
-    [Description("Lädt einen Kundenauftrag anhand der ID.")]
+    [McpServerTool(Name = "get_customer_order", Title = "Load customer order", ReadOnly = true, Idempotent = true)]
+    [Description("Loads a customer order by ID.")]
     public Task<string> GetCustomerOrder(
-        [Description("Kundenauftrags-ID.")]
+        [Description("Customer order ID.")]
         string id,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
             () => orderService.GetCustomerOrderAsync(id, cancellationToken),
             cancellationToken);
 
-    [McpServerTool(Name = "get_planning_orders", Title = "Planungsaufträge suchen", ReadOnly = true, Idempotent = true)]
+    [McpServerTool(Name = "get_planning_orders", Title = "Search planning orders", ReadOnly = true, Idempotent = true)]
     [Description(
-        "Sucht Planungs- oder Auftragsdaten in einem angegebenen Modul. Verwenden bei allgemeinen Fragen zu Planung, Probenanlage oder Kundenaufträgen.")]
+        "Searches planning or order data in a specified module. Use for general questions about planning, sample intake, or customer orders.")]
     public Task<string> GetPlanningOrders(
-        [Description("Modul: 'auftraege' oder 'kundenauftraege'.")]
+        [Description("Module: 'orders' or 'customer-orders'. German aliases 'auftraege' and 'kundenauftraege' are also accepted.")]
         string module,
-        [Description("Erweiterte EasyQuery-Suche als JSON. Optional.")]
+        [Description("Advanced EasyQuery search as JSON. Optional.")]
         string? q = null,
-        [Description("Maximale Trefferanzahl (1-50, Standard 25).")]
+        [Description("Maximum number of matches (1-50, default 25).")]
         int limit = 25,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(

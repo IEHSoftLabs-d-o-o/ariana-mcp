@@ -12,7 +12,7 @@ public sealed class SensitiveDataGuard(IOptions<AraianLabClientOptions> options)
             return;
 
         throw new ArianaLabException(
-            $"Der Zugriff auf '{featureName}' ist deaktiviert. " +
-            "Setzen Sie AraianLab:EnableSensitiveData auf true, wenn diese Daten ausdrücklich benötigt werden.");
+            $"Access to '{featureName}' is disabled. " +
+            "Set AraianLab:EnableSensitiveData to true when this data is explicitly needed.");
     }
 }

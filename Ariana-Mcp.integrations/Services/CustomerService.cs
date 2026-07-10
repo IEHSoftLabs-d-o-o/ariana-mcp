@@ -14,7 +14,7 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
     public async Task<string> GetCustomerByNameAsync(string name, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArianaLabException("name darf nicht leer sein.");
+            throw new ArianaLabException("name must not be empty.");
 
         var customerInfoUri =
             $"Rest/Mad/Kunden/KundenInformationen/ByName?name={Uri.EscapeDataString(name)}";
@@ -27,7 +27,7 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
         catch (ArianaLabException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
             throw new ArianaLabException(
-                $"Kein Kunde mit dem exakten Namen '{name}' gefunden. Bitte search_customers mit einem Teilnamen verwenden.",
+                $"No customer with the exact name '{name}' was found. Use search_customers with a partial name.",
                 HttpStatusCode.NotFound,
                 ex);
         }
@@ -36,7 +36,7 @@ public sealed class CustomerService(IHttpClientFactory httpClientFactory)
         if (kundeId is null)
         {
             throw new ArianaLabException(
-                $"Kein Kunde mit dem exakten Namen '{name}' gefunden. Bitte search_customers mit einem Teilnamen verwenden.");
+                $"No customer with the exact name '{name}' was found. Use search_customers with a partial name.");
         }
 
         return await GetCustomerAsync(kundeId, cancellationToken);
