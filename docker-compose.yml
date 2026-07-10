@@ -3,8 +3,8 @@ name: Ariana-Mcp
 services:
   Ariana-Mcp:
     build:
-      context: Ariana-Mcp
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Ariana-Mcp/Dockerfile
     ports:
       - "5000:5000"
     environment:
