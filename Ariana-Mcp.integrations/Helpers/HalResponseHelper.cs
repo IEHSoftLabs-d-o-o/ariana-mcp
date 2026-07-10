@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Ariana_Mcp.integrations.Services;
 
 namespace Ariana_Mcp.integrations.Helpers;
 
@@ -43,7 +44,7 @@ public static class HalResponseHelper
             .Select(item => ProjectItem(item, fields))
             .ToList();
 
-        return JsonSerializer.Serialize(new { count = projected.Count, items = projected });
+        return ArianaLabJson.Serialize(new { count = projected.Count, items = projected });
     }
 
     public static string ProjectCustomers(string json, int? limit = null) =>
@@ -73,14 +74,18 @@ public static class HalResponseHelper
         if (items.Count == 0 && !json.Contains("_embedded", StringComparison.Ordinal))
             return json;
 
-        return JsonSerializer.Serialize(new { count = items.Count, items });
+        return ArianaLabJson.Serialize(new { count = items.Count, items });
     }
 
-    private static Dictionary<string, string?> ProjectItem(JsonElement element, IReadOnlyList<string> fields)
+    private static Dictionary<string, string> ProjectItem(JsonElement element, IReadOnlyList<string> fields)
     {
-        var result = new Dictionary<string, string?>(fields.Count);
+        var result = new Dictionary<string, string>(fields.Count);
         foreach (var field in fields)
-            result[field] = TryGetStringProperty(element, field);
+        {
+            var value = TryGetStringProperty(element, field);
+            if (!string.IsNullOrWhiteSpace(value))
+                result[field] = value;
+        }
 
         return result;
     }

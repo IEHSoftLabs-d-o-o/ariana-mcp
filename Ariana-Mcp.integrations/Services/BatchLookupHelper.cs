@@ -74,7 +74,7 @@ internal static class BatchLookupHelper
                 envelope[key] = value;
         }
 
-        return JsonSerializer.Serialize(envelope);
+        return ArianaLabJson.Serialize(envelope);
     }
 
     private static Dictionary<string, object?> CreateResult(

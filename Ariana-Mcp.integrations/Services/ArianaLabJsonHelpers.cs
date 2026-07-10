@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Ariana_Mcp.integrations.Helpers;
 
 namespace Ariana_Mcp.integrations.Services;
 
@@ -47,6 +48,7 @@ internal static class ArianaLabJsonHelpers
         var summaries = items
             .Take(Math.Clamp(limit, 1, 200))
             .Select(item => CompactObject(item, preferredFields))
+            .Where(summary => summary.Count > 0)
             .ToList();
 
         return ArianaLabJson.Serialize(new
@@ -66,24 +68,35 @@ internal static class ArianaLabJsonHelpers
             if (!TryGetProperty(element, field, out var value))
                 continue;
 
-            result[field] = ToPlainValue(value);
+            AddIfPresent(result, field, ToPlainValue(value));
         }
 
         if (result.Count > 0)
             return result;
 
         if (element.ValueKind != JsonValueKind.Object)
-            return new Dictionary<string, object?> { ["wert"] = ToPlainValue(element) };
+        {
+            var plainValue = ToPlainValue(element);
+            return JsonResponseCleaner.IsEmptyValue(plainValue)
+                ? []
+                : new Dictionary<string, object?> { ["wert"] = plainValue };
+        }
 
         foreach (var property in element.EnumerateObject().Take(12))
         {
             if (property.Name is "_links" or "_embedded")
                 continue;
 
-            result[property.Name] = ToPlainValue(property.Value);
+            AddIfPresent(result, property.Name, ToPlainValue(property.Value));
         }
 
         return result;
+    }
+
+    private static void AddIfPresent(Dictionary<string, object?> target, string key, object? value)
+    {
+        if (!JsonResponseCleaner.IsEmptyValue(value))
+            target[key] = value;
     }
 
     public static string? TryGetString(JsonElement element, params string[] propertyNames)
@@ -122,20 +135,40 @@ internal static class ArianaLabJsonHelpers
         return false;
     }
 
+    private static object? CleanArrayValue(JsonElement value)
+    {
+        var items = value.EnumerateArray()
+            .Select(ToPlainValue)
+            .Where(item => !JsonResponseCleaner.IsEmptyValue(item))
+            .Take(20)
+            .ToList();
+
+        return items.Count == 0 ? null : items;
+    }
+
     private static object? ToPlainValue(JsonElement value) =>
         value.ValueKind switch
         {
-            JsonValueKind.String => value.GetString(),
+            JsonValueKind.String => string.IsNullOrWhiteSpace(value.GetString()) ? null : value.GetString(),
             JsonValueKind.Number when value.TryGetInt64(out var longValue) => longValue,
             JsonValueKind.Number when value.TryGetDecimal(out var decimalValue) => decimalValue,
             JsonValueKind.True => true,
             JsonValueKind.False => false,
             JsonValueKind.Null or JsonValueKind.Undefined => null,
-            JsonValueKind.Array => value.EnumerateArray().Take(20).Select(ToPlainValue).ToList(),
-            JsonValueKind.Object => value.EnumerateObject()
-                .Where(property => property.Name is not "_links" and not "_embedded")
-                .Take(12)
-                .ToDictionary(property => property.Name, property => ToPlainValue(property.Value)),
+            JsonValueKind.Array => CleanArrayValue(value),
+            JsonValueKind.Object => CleanObjectValue(value),
             _ => value.ToString(),
         };
+
+    private static object? CleanObjectValue(JsonElement value)
+    {
+        var properties = value.EnumerateObject()
+            .Where(property => property.Name is not "_links" and not "_embedded")
+            .Take(12)
+            .Select(property => new KeyValuePair<string, object?>(property.Name, ToPlainValue(property.Value)))
+            .Where(pair => !JsonResponseCleaner.IsEmptyValue(pair.Value))
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
+
+        return properties.Count == 0 ? null : properties;
+    }
 }

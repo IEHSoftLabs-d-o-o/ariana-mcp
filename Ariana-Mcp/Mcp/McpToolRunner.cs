@@ -1,4 +1,5 @@
 using Ariana_Mcp.integrations.Exceptions;
+using Ariana_Mcp.integrations.Helpers;
 using ModelContextProtocol;
 
 namespace Ariana_Mcp.Mcp;
@@ -14,7 +15,8 @@ internal static class McpToolRunner
 
         try
         {
-            return await action().ConfigureAwait(false);
+            var result = await action().ConfigureAwait(false);
+            return JsonResponseCleaner.Clean(result);
         }
         catch (ArianaLabException ex)
         {
