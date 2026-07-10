@@ -477,4 +477,7 @@ fabric.properties
 
 # Android studio 3.1+ serialized cache file
 .idea/caches/build_file_checksums.ser
-Ariana-Mcp/appsettings.Development.json
+# Local developer configuration (may contain credentials)
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/appsettings.override.json
