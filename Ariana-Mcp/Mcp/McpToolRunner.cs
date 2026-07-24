@@ -1,5 +1,6 @@
 using Ariana_Mcp.integrations.Exceptions;
 using Ariana_Mcp.integrations.Helpers;
+using Ariana_Mcp.Okf;
 using ModelContextProtocol;
 
 namespace Ariana_Mcp.Mcp;
@@ -19,6 +20,10 @@ internal static class McpToolRunner
             return JsonResponseCleaner.Clean(result);
         }
         catch (ArianaLabException ex)
+        {
+            throw new McpException(ex.Message, ex);
+        }
+        catch (OkfException ex)
         {
             throw new McpException(ex.Message, ex);
         }

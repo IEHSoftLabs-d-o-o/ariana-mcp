@@ -1,0 +1,16 @@
+{
+  "bundle": "C:\\Users\\c.stockinger\\Downloads\\concept\\okf\\klims",
+  "audience": "end-user",
+  "source": "KLims-Anwenderwiki",
+  "included_wiki_pages": 39,
+  "excluded_wiki_pages": 22,
+  "workflows": 10,
+  "markdown_files": 69,
+  "validation": {
+    "status": "pass",
+    "markdown_files": 69,
+    "structural_issues": [],
+    "broken_links": [],
+    "prohibited_hits": []
+  }
+}
