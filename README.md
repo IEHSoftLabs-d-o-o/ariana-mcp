@@ -17,7 +17,6 @@ Especially with local Ollama models, there is no guarantee that the model will r
 - German server instructions and German tool/resource metadata for DAUS workflows
 - Structured error handling (`McpException` with `isError: true` for recoverable failures)
 - Server-side EasyQuery search for customers and samples (no full customer list download)
-- Sensitive endpoints gated by `AraianLab:EnableSensitiveData` (default: `false`)
 - Health endpoint at `/health` and info endpoint at `/`
 - Configuration via `appsettings.json`, environment variables, and optional `appsettings.override.json`
 - ArianaLab integration via HTTP client with Basic Auth
@@ -58,7 +57,7 @@ All read tools are marked as read-only, idempotent, and non-destructive.
 | `report_json_by_sample` | Structured exportable Prüfbericht JSON |
 | `customer_info_by_sample` | Customer information for the sample's client |
 | `sample_results_by_id` | Processing/results data including parameters and sub-samples |
-| `get_sample_logs` | Sample audit log (**requires `EnableSensitiveData`**) |
+| `get_sample_logs` | Sample audit log |
 
 ### Customers (Kunden)
 
@@ -99,14 +98,10 @@ All read tools are marked as read-only, idempotent, and non-destructive.
 | --- | --- |
 | `get_system_info` | Check ArianaLab reachability and authenticated user |
 
-### Sensitive (gated)
-
-These tools require `AraianLab:EnableSensitiveData=true`:
+### Customer Order Requests (COR)
 
 | Tool | Description |
 | --- | --- |
-| `search_invoices` | Search invoices |
-| `get_invoice` | Load invoice by number |
 | `search_cor` | Search Customer Order Requests |
 | `get_cor` | Load one COR by ID |
 | `validate_cor_gateway` | Validate a COR gateway payload without saving |
@@ -115,16 +110,15 @@ These tools require `AraianLab:EnableSensitiveData=true`:
 
 Resource templates for clients that prefer MCP resources over tool calls:
 
-| URI template | Description | Gated |
-| --- | --- | --- |
-| `arianalab://sample/{tagebuchnummer}` | Full sample data | No |
-| `arianalab://sample/{tagebuchnummer}/logs` | Sample audit log | Yes |
-| `arianalab://sample/{tagebuchnummer}/attachments` | Attachment metadata | Yes |
-| `arianalab://customer/{nummer}` | Customer master record | No |
-| `arianalab://analysis/{id}` | Analysis catalog entry | No |
-| `arianalab://cor/{corId}` | Customer Order Request | Yes |
-| `arianalab://invoice/{id}` | Invoice | Yes |
-| `arianalab://planning/{module}/{id}` | Planning/order record | No |
+| URI template | Description |
+| --- | --- |
+| `arianalab://sample/{tagebuchnummer}` | Full sample data |
+| `arianalab://sample/{tagebuchnummer}/logs` | Sample audit log |
+| `arianalab://sample/{tagebuchnummer}/attachments` | Attachment metadata |
+| `arianalab://customer/{nummer}` | Customer master record |
+| `arianalab://analysis/{id}` | Analysis catalog entry |
+| `arianalab://cor/{corId}` | Customer Order Request |
+| `arianalab://planning/{module}/{id}` | Planning/order record |
 
 ## Prerequisites
 
@@ -132,7 +126,7 @@ Resource templates for clients that prefer MCP resources over tool calls:
 - Docker and Docker Compose (optional, with Open WebUI)
 - Ollama or another model backend with tool-calling support
 - Open WebUI with MCP Streamable HTTP support (or another MCP client)
-- ArianaLab credentials with `LK.Intern` (and additional roles for invoices/COR if needed)
+- ArianaLab credentials with `LK.Intern` (and additional roles for COR if needed)
 
 ## Configuration
 
@@ -151,8 +145,7 @@ Optional local override in `Ariana-Mcp/appsettings.override.json`:
   "AraianLab": {
     "User": "<username>",
     "Password": "<password>",
-    "BaseUrl": "https://klims.labor-kneissler.de/",
-    "EnableSensitiveData": false
+    "BaseUrl": "https://klims.labor-kneissler.de/"
   }
 }
 ```
@@ -162,7 +155,6 @@ Optional local override in `Ariana-Mcp/appsettings.override.json`:
 | `User` | required | ArianaLab Basic Auth username |
 | `Password` | required | ArianaLab Basic Auth password |
 | `BaseUrl` | required | ArianaLab base URL |
-| `EnableSensitiveData` | `false` | Enable logs, attachments, invoices, and COR tools/resources |
 
 Do not commit credentials to Git.
 
@@ -235,6 +227,5 @@ Adjust ArianaLab credentials and `OLLAMA_BASE_URL` in `docker-compose.yml` for y
 - Responses are raw or compact JSON from ArianaLab, not natural-language summaries.
 - No authentication on the MCP endpoint itself; protect `/mcp` at the network or reverse-proxy level.
 - Large payloads (full sample, report JSON) can be slow and may fill the model context window.
-- Sensitive data (PII, billing, audit logs) is available only when explicitly enabled.
 - Local Ollama models may use MCP tools unreliably depending on model and client configuration.
 - Tool and resource names may still change as the integration matures.

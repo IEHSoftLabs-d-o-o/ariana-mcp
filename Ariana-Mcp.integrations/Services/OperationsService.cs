@@ -78,60 +78,27 @@ public sealed class OperationsService(IHttpClientFactory httpClientFactory)
 
     public Task<string> SearchCorAsync(
         string? q,
-        bool includeSensitiveOrderData,
         int limit = DefaultLimit,
-        CancellationToken cancellationToken = default)
-    {
-        EnsureSensitive(includeSensitiveOrderData, "COR orders may contain customer, order, invoice, and payment data.");
-        return SearchHalAsync("Rest/Cors/CustomerOrderRequests", q, limit, cancellationToken);
-    }
+        CancellationToken cancellationToken = default) =>
+        SearchHalAsync("Rest/Cors/CustomerOrderRequests", q, limit, cancellationToken);
 
     public Task<string> GetCorAsync(
         string corId,
-        bool includeSensitiveOrderData,
-        CancellationToken cancellationToken = default)
-    {
-        EnsureSensitive(includeSensitiveOrderData, "A COR order may contain customer, order, invoice, and payment data.");
-        return GetRequiredAsync(
+        CancellationToken cancellationToken = default) =>
+        GetRequiredAsync(
             $"Rest/Cors/CustomerOrderRequests/{Uri.EscapeDataString(RequireText(corId, "Die COR-ID darf nicht leer sein."))}",
             $"Kein COR-Auftrag mit der ID '{corId}' gefunden.",
             cancellationToken);
-    }
 
     public Task<string> ValidateCorGatewayAsync(
         string dtoJson,
-        bool includeSensitiveOrderData,
         CancellationToken cancellationToken = default)
     {
-        EnsureSensitive(includeSensitiveOrderData, "COR validation may contain customer, order, invoice, and payment data.");
-
         if (string.IsNullOrWhiteSpace(dtoJson))
             throw new ArianaLabException("Der COR-Datensatz zur Prüfung darf nicht leer sein.");
 
         var client = CreateClient();
         return PostJsonAsStringAsync(client, "Rest/Cors/CustomerOrderRequestsGateway/validate", dtoJson, cancellationToken);
-    }
-
-    public Task<string> SearchInvoicesAsync(
-        string? q,
-        bool includeSensitiveBillingData,
-        int limit = DefaultLimit,
-        CancellationToken cancellationToken = default)
-    {
-        EnsureSensitive(includeSensitiveBillingData, "Invoices contain sensitive billing data.");
-        return SearchHalAsync("Rest/Opd/Rechnungserstellung/Rechnungen", q, limit, cancellationToken);
-    }
-
-    public Task<string> GetInvoiceAsync(
-        string id,
-        bool includeSensitiveBillingData,
-        CancellationToken cancellationToken = default)
-    {
-        EnsureSensitive(includeSensitiveBillingData, "An invoice contains sensitive billing data.");
-        return GetRequiredAsync(
-            $"Rest/Opd/Rechnungserstellung/Rechnungen/{Uri.EscapeDataString(RequireText(id, "Die Rechnungsnummer darf nicht leer sein."))}",
-            $"Keine Rechnung mit der Nummer '{id}' gefunden.",
-            cancellationToken);
     }
 
     public Task<string> GetPlanningResourceAsync(
@@ -178,15 +145,6 @@ public sealed class OperationsService(IHttpClientFactory httpClientFactory)
         catch (ArianaLabException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
             throw new ArianaLabException(notFoundMessage, HttpStatusCode.NotFound, ex);
-        }
-    }
-
-    private static void EnsureSensitive(bool confirmed, string reason)
-    {
-        if (!confirmed)
-        {
-            throw new ArianaLabException(
-                $"{reason} Use this tool only when the user explicitly asked for it, and set the confirmation parameter to true.");
         }
     }
 

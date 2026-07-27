@@ -44,9 +44,6 @@ internal static class ServerInstructions
         Diagnostics: get_system_info checks reachability and the signed-in user.
         OKF diagnostics: okf_bundle_status inspects the configured documentation bundle.
 
-        Sensitive data (logs, attachments, invoices, COR) is blocked by default.
-        Use only when explicitly needed and with AraianLab:EnableSensitiveData=true.
-
         Batch tools (sample_by_id, customer_by_name, search_customers_batch) accept lists;
         missing entries do not fail the entire request.
         """;

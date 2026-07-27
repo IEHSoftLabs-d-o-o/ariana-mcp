@@ -13,9 +13,7 @@ public sealed class ArianaLabResources(
     CustomerService customerService,
     ReferenceDataService referenceDataService,
     OrderService orderService,
-    CorService corService,
-    InvoiceService invoiceService,
-    SensitiveDataGuard sensitiveDataGuard)
+    CorService corService)
 {
     [McpServerResource(
         UriTemplate = "arianalab://sample/{tagebuchnummer}",
@@ -42,7 +40,6 @@ public sealed class ArianaLabResources(
     public Task<TextResourceContents> GetSampleLogs(string tagebuchnummer, CancellationToken cancellationToken)
         => McpResourceRunner.RunAsync(async () =>
         {
-            sensitiveDataGuard.EnsureEnabled("sample logs");
             var decoded = ArianaLabUriHelper.DecodePathSegment(tagebuchnummer);
             var body = await sampleService.GetSampleLogsAsync(decoded, cancellationToken);
             return CreateJsonResource($"arianalab://sample/{tagebuchnummer}/logs", body);
@@ -58,7 +55,6 @@ public sealed class ArianaLabResources(
     public Task<TextResourceContents> GetSampleAttachments(string tagebuchnummer, CancellationToken cancellationToken)
         => McpResourceRunner.RunAsync(async () =>
         {
-            sensitiveDataGuard.EnsureEnabled("sample attachments");
             var decoded = ArianaLabUriHelper.DecodePathSegment(tagebuchnummer);
             var body = await sampleService.GetSampleAttachmentsAsync(decoded, cancellationToken);
             return CreateJsonResource($"arianalab://sample/{tagebuchnummer}/attachments", body);
@@ -100,25 +96,9 @@ public sealed class ArianaLabResources(
     public Task<TextResourceContents> GetCor(string corId, CancellationToken cancellationToken)
         => McpResourceRunner.RunAsync(async () =>
         {
-            sensitiveDataGuard.EnsureEnabled("COR details");
             var decoded = ArianaLabUriHelper.DecodePathSegment(corId);
             var body = await corService.GetCorAsync(decoded, cancellationToken);
             return CreateJsonResource($"arianalab://cor/{corId}", body);
-        }, cancellationToken);
-
-    [McpServerResource(
-        UriTemplate = "arianalab://invoice/{id}",
-        Name = "Invoice",
-        MimeType = "application/json")]
-    [Description(
-        "Loads an invoice by invoice number. Use only when the user explicitly needs invoice data; " +
-        "contains billing-relevant data.")]
-    public Task<TextResourceContents> GetInvoice(string id, CancellationToken cancellationToken)
-        => McpResourceRunner.RunAsync(async () =>
-        {
-            sensitiveDataGuard.EnsureEnabled("invoice details");
-            var body = await invoiceService.GetInvoiceAsync(id, cancellationToken);
-            return CreateJsonResource($"arianalab://invoice/{id}", body);
         }, cancellationToken);
 
     [McpServerResource(

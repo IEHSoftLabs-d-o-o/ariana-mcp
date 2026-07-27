@@ -152,15 +152,12 @@ public sealed class SampleTools(SampleService sampleService, CustomerService cus
         Destructive = false)]
     [Description(
         "Loads the change log for a sample. Use only when explicitly asked who changed something and when; " +
-        "may contain internal audit data. Requires AraianLab:EnableSensitiveData=true.")]
+        "may contain internal audit data.")]
     public Task<string> GetSampleLogs(
         [Description("Sample lab journal number, for example '26-0318054'.")]
         string tagebuchnummer,
-        SensitiveDataTools sensitiveDataTools,
         CancellationToken cancellationToken = default)
-        => McpToolRunner.RunAsync(async () =>
-        {
-            sensitiveDataTools.EnsureSensitiveDataEnabled("sample logs");
-            return await sampleService.GetSampleLogsAsync(tagebuchnummer, cancellationToken);
-        }, cancellationToken);
+        => McpToolRunner.RunAsync(
+            () => sampleService.GetSampleLogsAsync(tagebuchnummer, cancellationToken),
+            cancellationToken);
 }

@@ -11,14 +11,13 @@ resource: "okf://klims/reports/scope"
 ---
 # Ergebnis
 
-- Verwendete Anwenderseiten: **39**
+- Verwendete Anwenderseiten: **38**
 - Ausgeschlossene Seiten: **22**
 - Quelle: ausschließlich das KLims-Anwenderwiki
 - Quellcode- und Implementierungsquellen: **nicht verwendet**
 
 # Verwendete Bereiche
 
-- abrechnung: **1**
 - abteilungen: **1**
 - administration: **1**
 - allgemein: **2**

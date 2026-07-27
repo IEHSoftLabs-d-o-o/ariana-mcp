@@ -2,7 +2,6 @@
 
 ## Bereiche
 
-* [abrechnung](abrechnung/) - Anwenderwissen im Bereich abrechnung.
 * [abteilungen](abteilungen/) - Anwenderwissen im Bereich abteilungen.
 * [administration](administration/) - Anwenderwissen im Bereich administration.
 * [allgemein](allgemein/) - Anwenderwissen im Bereich allgemein.

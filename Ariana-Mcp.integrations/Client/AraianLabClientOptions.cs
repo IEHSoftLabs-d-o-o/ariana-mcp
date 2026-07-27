@@ -18,6 +18,4 @@ public sealed class AraianLabClientOptions
     [Required]
     [Url]
     public string BaseUrl { get; set; } = "";
-
-    public bool EnableSensitiveData { get; set; }
 }

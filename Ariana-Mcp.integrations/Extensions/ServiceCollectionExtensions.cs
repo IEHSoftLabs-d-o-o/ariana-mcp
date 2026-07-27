@@ -19,15 +19,12 @@ public static class ServiceCollectionExtensions
             .ValidateOnStart();
 
         services.AddTransient<AraianLabAuthHandler>();
-        services.AddTransient<SensitiveDataGuard>();
-        services.AddTransient<SensitiveDataTools>();
         services.AddTransient<CustomerService>();
         services.AddTransient<SampleService>();
         services.AddTransient<ReferenceDataService>();
         services.AddTransient<OrderService>();
         services.AddTransient<SystemService>();
         services.AddTransient<CorService>();
-        services.AddTransient<InvoiceService>();
         services.AddHttpClient(ArianaLabHttp.ClientName, (sp, client) =>
             {
                 var options = sp.GetRequiredService<IOptions<AraianLabClientOptions>>().Value;

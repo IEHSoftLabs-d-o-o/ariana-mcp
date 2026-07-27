@@ -123,13 +123,11 @@ public sealed class OperationsTools(OperationsService operationsService)
     public Task<string> SearchCor(
         [Description("Advanced search for COR orders. Example: search criteria for customer, status, or order number.")]
         string? q = null,
-        [Description("Must be true because COR orders may contain sensitive customer, order, invoice, or payment data.")]
-        bool includeSensitiveOrderData = false,
         [Description("Maximum number of matches (1-100, default 25). Example: 25.")]
         int limit = 25,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
-            () => operationsService.SearchCorAsync(q, includeSensitiveOrderData, limit, cancellationToken),
+            () => operationsService.SearchCorAsync(q, limit, cancellationToken),
             cancellationToken);
 
     [McpServerTool(
@@ -143,11 +141,9 @@ public sealed class OperationsTools(OperationsService operationsService)
     public Task<string> GetCor(
         [Description("COR ID, for example from a search result.")]
         string corId,
-        [Description("Must be true because a COR order may contain sensitive customer, order, invoice, or payment data.")]
-        bool includeSensitiveOrderData = false,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
-            () => operationsService.GetCorAsync(corId, includeSensitiveOrderData, cancellationToken),
+            () => operationsService.GetCorAsync(corId, cancellationToken),
             cancellationToken);
 
     [McpServerTool(
@@ -161,48 +157,8 @@ public sealed class OperationsTools(OperationsService operationsService)
     public Task<string> ValidateCorGateway(
         [Description("COR gateway record as JSON. May contain customer, order, invoice, or payment data.")]
         string dtoJson,
-        [Description("Must be true because the COR record may contain sensitive customer, order, invoice, or payment data.")]
-        bool includeSensitiveOrderData = false,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
-            () => operationsService.ValidateCorGatewayAsync(dtoJson, includeSensitiveOrderData, cancellationToken),
-            cancellationToken);
-
-    [McpServerTool(
-        Name = "search_invoices",
-        Title = "Search invoices",
-        ReadOnly = true,
-        Idempotent = true,
-        Destructive = false)]
-    [Description(
-        "Searches invoices. Use only when the user explicitly asks for an invoice, invoice number, billing, or open invoice data; contains sensitive billing data.")]
-    public Task<string> SearchInvoices(
-        [Description("Advanced search for invoices. Example: search criteria for invoice number, customer, status, or lab journal number.")]
-        string? q = null,
-        [Description("Must be true because invoices contain sensitive billing data.")]
-        bool includeSensitiveBillingData = false,
-        [Description("Maximum number of matches (1-100, default 25). Example: 25.")]
-        int limit = 25,
-        CancellationToken cancellationToken = default)
-        => McpToolRunner.RunAsync(
-            () => operationsService.SearchInvoicesAsync(q, includeSensitiveBillingData, limit, cancellationToken),
-            cancellationToken);
-
-    [McpServerTool(
-        Name = "get_invoice",
-        Title = "Load invoice",
-        ReadOnly = true,
-        Idempotent = true,
-        Destructive = false)]
-    [Description(
-        "Loads an invoice. Use only when the user explicitly needs invoice data; contains sensitive billing data.")]
-    public Task<string> GetInvoice(
-        [Description("Invoice number, for example '2026-000123'.")]
-        string id,
-        [Description("Must be true because an invoice contains sensitive billing data.")]
-        bool includeSensitiveBillingData = false,
-        CancellationToken cancellationToken = default)
-        => McpToolRunner.RunAsync(
-            () => operationsService.GetInvoiceAsync(id, includeSensitiveBillingData, cancellationToken),
+            () => operationsService.ValidateCorGatewayAsync(dtoJson, cancellationToken),
             cancellationToken);
 }

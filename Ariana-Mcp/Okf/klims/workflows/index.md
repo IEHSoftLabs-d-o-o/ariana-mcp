@@ -10,5 +10,4 @@
 * [Proben beurteilen](proben-beurteilen.md) - Anwenderorientierter Einstieg für den Ablauf „Proben beurteilen“.
 * [Proben suchen](proben-suchen.md) - Anwenderorientierter Einstieg für den Ablauf „Proben suchen“.
 * [Prüfberichte erstellen](pruefberichte-erstellen.md) - Anwenderorientierter Einstieg für den Ablauf „Prüfberichte erstellen“.
-* [Rechnungen erstellen](rechnungen-erstellen.md) - Anwenderorientierter Einstieg für den Ablauf „Rechnungen erstellen“.
 * [Stammdaten pflegen](stammdaten-pflegen.md) - Anwenderorientierter Einstieg für den Ablauf „Stammdaten pflegen“.
