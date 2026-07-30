@@ -25,6 +25,34 @@ public sealed class OkfService
         @"\s+",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
+    private static readonly Regex MarkdownLinkRegex = new(
+        @"!?\[([^\]]*)\]\((?:[^()]|\([^)]*\))*\)",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    private static readonly Regex MarkdownReferenceLinkRegex = new(
+        @"!?\[([^\]]+)\]\[[^\]]*\]",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    private static readonly Regex MarkdownReferenceDefinitionRegex = new(
+        @"^\s*\[[^\]]+\]:\s*\S+.*$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Multiline);
+
+    private static readonly Regex HtmlAnchorRegex = new(
+        @"<a\b[^>]*>(.*?)</a>",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+    private static readonly Regex ResourceUriLineRegex = new(
+        @"^\s*resource:\s*[""']?[a-z][a-z0-9+.-]*://.*$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Multiline);
+
+    private static readonly Regex AbsoluteUrlRegex = new(
+        @"\b(?:https?|ftp)://[^\s<>""']+|\bwww\.[^\s<>""']+",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
+    private static readonly Regex McpUriRegex = new(
+        @"\b(?:okf|arianalab)://[^\s<>""']+",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
     private readonly string _bundleRoot;
     private readonly object _cacheGate = new();
     private Task<IReadOnlyList<string>>? _markdownPathsTask;
@@ -117,7 +145,7 @@ public sealed class OkfService
             .Take(resultLimit)
             .Select(x =>
             {
-                var body = WhitespaceRegex.Replace(x.document.Content, " ").Trim();
+                var body = WhitespaceRegex.Replace(RemoveLinks(x.document.Content), " ").Trim();
                 var lower = body.ToLowerInvariant();
                 var positions = terms
                     .Select(term => lower.IndexOf(term, StringComparison.Ordinal))
@@ -137,7 +165,7 @@ public sealed class OkfService
                 {
                     path = x.document.RelativePath,
                     score = x.score,
-                    title,
+                    title = title is null ? null : RemoveLinks(title),
                     type,
                     confidence,
                     excerpt,
@@ -184,9 +212,23 @@ public sealed class OkfService
             throw new OkfException("Unable to read the requested Markdown file.", ex);
         }
 
-        return content.Length <= MaxContentChars
-            ? content
-            : $"{content[..MaxContentChars]}\n\n[truncated]";
+        var sanitized = RemoveLinks(content);
+        return sanitized.Length <= MaxContentChars
+            ? sanitized
+            : $"{sanitized[..MaxContentChars]}\n\n[truncated]";
+    }
+
+    private static string RemoveLinks(string content)
+    {
+        var sanitized = HtmlAnchorRegex.Replace(content, "$1");
+        sanitized = MarkdownLinkRegex.Replace(sanitized, "$1");
+        sanitized = MarkdownReferenceLinkRegex.Replace(sanitized, "$1");
+        sanitized = MarkdownReferenceDefinitionRegex.Replace(sanitized, string.Empty);
+        sanitized = ResourceUriLineRegex.Replace(sanitized, string.Empty);
+        sanitized = AbsoluteUrlRegex.Replace(sanitized, string.Empty);
+        sanitized = McpUriRegex.Replace(sanitized, string.Empty);
+        sanitized = sanitized.Replace("<externer Link entfernt>", string.Empty, StringComparison.OrdinalIgnoreCase);
+        return sanitized;
     }
 
     private string SafeBundlePath(string relativePath)

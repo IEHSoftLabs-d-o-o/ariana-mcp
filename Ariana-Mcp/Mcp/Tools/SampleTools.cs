@@ -83,7 +83,7 @@ public sealed class SampleTools(SampleService sampleService, CustomerService cus
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Returns a brief overview for a sample, for example status, links, and important header data. " +
+        "Returns a brief overview for a sample, for example status and important header data. " +
         "Prefer this tool when the user asks generally what is happening with a sample.")]
     public Task<string> GetSampleShortInfo(
         [Description("Sample lab journal number, for example '26-0318054'.")]

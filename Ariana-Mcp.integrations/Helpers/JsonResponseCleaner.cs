@@ -1,10 +1,15 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Ariana_Mcp.integrations.Services;
 
 namespace Ariana_Mcp.integrations.Helpers;
 
 public static class JsonResponseCleaner
 {
+    private static readonly Regex LinkRegex = new(
+        @"\b(?:(?:https?|ftp)://|www\.|(?:okf|arianalab)://)[^\s<>""']+",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
     public static string Clean(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -60,8 +65,14 @@ public static class JsonResponseCleaner
             _ => element.ToString(),
         };
 
-    private static object? CleanString(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : value;
+    private static object? CleanString(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var withoutLinks = LinkRegex.Replace(value, string.Empty).Trim();
+        return string.IsNullOrWhiteSpace(withoutLinks) ? null : withoutLinks;
+    }
 
     private static object? CleanArray(JsonElement element)
     {
@@ -81,6 +92,9 @@ public static class JsonResponseCleaner
         var result = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach (var property in element.EnumerateObject())
         {
+            if (IsLinkProperty(property.Name))
+                continue;
+
             var cleaned = CleanElement(property.Value);
             if (cleaned is not null)
                 result[property.Name] = cleaned;
@@ -88,4 +102,12 @@ public static class JsonResponseCleaner
 
         return result.Count == 0 ? null : result;
     }
+
+    private static bool IsLinkProperty(string name) =>
+        name.Equals("_links", StringComparison.OrdinalIgnoreCase) ||
+        name.Equals("links", StringComparison.OrdinalIgnoreCase) ||
+        name.Equals("link", StringComparison.OrdinalIgnoreCase) ||
+        name.Equals("href", StringComparison.OrdinalIgnoreCase) ||
+        name.Equals("url", StringComparison.OrdinalIgnoreCase) ||
+        name.Equals("uri", StringComparison.OrdinalIgnoreCase);
 }
