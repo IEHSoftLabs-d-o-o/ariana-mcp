@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -10,6 +11,7 @@ public sealed class OkfService
     private const int MaxContentChars = 24_000;
     private const int DefaultSearchLimit = 8;
     private const int MaxSearchLimit = 20;
+    private const string ReferencePrefix = "okf-";
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -26,8 +28,12 @@ public sealed class OkfService
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private static readonly Regex MarkdownLinkRegex = new(
-        @"!?\[([^\]]*)\]\((?:[^()]|\([^)]*\))*\)",
+        @"!?\[([^\]]*)\]\(((?:[^()]|\([^)]*\))*)\)",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    private static readonly Regex UriSchemeRegex = new(
+        @"^[a-z][a-z0-9+.-]*:",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
     private static readonly Regex MarkdownReferenceLinkRegex = new(
         @"!?\[([^\]]+)\]\[[^\]]*\]",
@@ -46,17 +52,18 @@ public sealed class OkfService
         RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
     private static readonly Regex AbsoluteUrlRegex = new(
-        @"\b(?:https?|ftp)://[^\s<>""']+|\bwww\.[^\s<>""']+",
+        @"(?<![A-Za-z0-9])(?:(?:https?|ftp)://|www\.)[^\s<>""']+",
         RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
     private static readonly Regex McpUriRegex = new(
-        @"\b(?:okf|arianalab)://[^\s<>""']+",
+        @"(?<![A-Za-z0-9])(?:okf|arianalab)://[^\s<>""']+",
         RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
     private readonly string _bundleRoot;
     private readonly object _cacheGate = new();
     private Task<IReadOnlyList<string>>? _markdownPathsTask;
     private Task<IReadOnlyList<OkfDocument>>? _documentsTask;
+    private Task<OkfReferences>? _referencesTask;
 
     public OkfService(IOptions<OkfOptions> options)
     {
@@ -82,26 +89,25 @@ public sealed class OkfService
             JsonOptions);
     }
 
-    public Task<string> ReadIndexAsync(string? path, CancellationToken cancellationToken = default)
+    public async Task<string> ReadIndexAsync(string? reference, CancellationToken cancellationToken = default)
     {
-        var requested = path?.Trim() ?? string.Empty;
-        string relative;
-        if (string.IsNullOrEmpty(requested))
-            relative = "index.md";
-        else if (requested.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
-            relative = requested;
-        else
-            relative = $"{requested.TrimEnd('/')}/index.md";
+        var requested = reference?.Trim() ?? string.Empty;
+        var relative = string.IsNullOrEmpty(requested)
+            ? "index.md"
+            : await ResolveReferenceAsync(requested, isIndex: true, cancellationToken).ConfigureAwait(false);
 
-        return ReadMarkdownAsync(relative, cancellationToken);
+        return await ReadMarkdownAsync(relative, cancellationToken).ConfigureAwait(false);
     }
 
-    public Task<string> ReadConceptAsync(string path, CancellationToken cancellationToken = default)
+    public async Task<string> ReadConceptAsync(string reference, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(path))
-            throw new OkfException("path is required");
+        if (string.IsNullOrWhiteSpace(reference))
+            throw new OkfException("reference is required");
 
-        return ReadMarkdownAsync(path.Trim(), cancellationToken);
+        var relative = await ResolveReferenceAsync(reference.Trim(), isIndex: false, cancellationToken)
+            .ConfigureAwait(false);
+
+        return await ReadMarkdownAsync(relative, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<string> SearchAsync(
@@ -123,6 +129,7 @@ public sealed class OkfService
             : Math.Max(1, Math.Min(MaxSearchLimit, limit.Value));
 
         var documents = await GetDocumentsAsync(cancellationToken).ConfigureAwait(false);
+        var references = await GetReferencesAsync(cancellationToken).ConfigureAwait(false);
         var results = documents
             .Select(document =>
             {
@@ -145,7 +152,9 @@ public sealed class OkfService
             .Take(resultLimit)
             .Select(x =>
             {
-                var body = WhitespaceRegex.Replace(RemoveLinks(x.document.Content), " ").Trim();
+                var body = WhitespaceRegex
+                    .Replace(StripLinkSyntax(RemoveFrontMatter(x.document.Content)), " ")
+                    .Trim();
                 var lower = body.ToLowerInvariant();
                 var positions = terms
                     .Select(term => lower.IndexOf(term, StringComparison.Ordinal))
@@ -163,9 +172,9 @@ public sealed class OkfService
 
                 return new
                 {
-                    path = x.document.RelativePath,
+                    reference = references.GetReference(x.document.RelativePath),
                     score = x.score,
-                    title = title is null ? null : RemoveLinks(title),
+                    title = title is null ? null : StripLinkSyntax(title),
                     type,
                     confidence,
                     excerpt,
@@ -212,23 +221,156 @@ public sealed class OkfService
             throw new OkfException("Unable to read the requested Markdown file.", ex);
         }
 
-        var sanitized = RemoveLinks(content);
+        var references = await GetReferencesAsync(cancellationToken).ConfigureAwait(false);
+        var sanitized = Sanitize(content, NormalizeRelative(relativePath), references);
         return sanitized.Length <= MaxContentChars
             ? sanitized
             : $"{sanitized[..MaxContentChars]}\n\n[truncated]";
     }
 
-    private static string RemoveLinks(string content)
+    /// <summary>
+    /// Removes every trace of the underlying storage layout: front matter, links, URLs and
+    /// resource URIs. Links that point at bundle documents are replaced by opaque references
+    /// so navigation stays possible without exposing file names or paths.
+    /// </summary>
+    private static string Sanitize(string content, string relativePath, OkfReferences references)
+    {
+        var sanitized = RemoveFrontMatter(content);
+        sanitized = HtmlAnchorRegex.Replace(sanitized, "$1");
+        sanitized = MarkdownLinkRegex.Replace(
+            sanitized,
+            match => ReplaceLink(match, relativePath, references));
+
+        return RemoveLinkArtifacts(sanitized);
+    }
+
+    private static string StripLinkSyntax(string content)
     {
         var sanitized = HtmlAnchorRegex.Replace(content, "$1");
         sanitized = MarkdownLinkRegex.Replace(sanitized, "$1");
-        sanitized = MarkdownReferenceLinkRegex.Replace(sanitized, "$1");
+        return RemoveLinkArtifacts(sanitized);
+    }
+
+    private static string RemoveLinkArtifacts(string content)
+    {
+        var sanitized = MarkdownReferenceLinkRegex.Replace(content, "$1");
         sanitized = MarkdownReferenceDefinitionRegex.Replace(sanitized, string.Empty);
         sanitized = ResourceUriLineRegex.Replace(sanitized, string.Empty);
         sanitized = AbsoluteUrlRegex.Replace(sanitized, string.Empty);
         sanitized = McpUriRegex.Replace(sanitized, string.Empty);
-        sanitized = sanitized.Replace("<externer Link entfernt>", string.Empty, StringComparison.OrdinalIgnoreCase);
-        return sanitized;
+        return sanitized.Replace("<externer Link entfernt>", string.Empty, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string RemoveFrontMatter(string content)
+    {
+        if (!content.StartsWith("---", StringComparison.Ordinal))
+            return content;
+
+        var closing = content.IndexOf("\n---", 3, StringComparison.Ordinal);
+        if (closing < 0)
+            return content;
+
+        var lineEnd = content.IndexOf('\n', closing + 1);
+        return lineEnd < 0 ? string.Empty : content[(lineEnd + 1)..].TrimStart('\r', '\n');
+    }
+
+    private static string ReplaceLink(Match match, string relativePath, OkfReferences references)
+    {
+        var text = match.Groups[1].Value.Trim();
+        if (match.Value.StartsWith('!'))
+            return text;
+
+        var reference = ResolveLinkTarget(match.Groups[2].Value, relativePath, references);
+        if (reference is null)
+            return text;
+
+        return text.Length == 0 ? $"(Referenz: {reference})" : $"{text} (Referenz: {reference})";
+    }
+
+    private static string? ResolveLinkTarget(string target, string relativePath, OkfReferences references)
+    {
+        var candidate = target.Trim();
+        if (candidate.StartsWith('<') && candidate.EndsWith('>'))
+            candidate = candidate[1..^1].Trim();
+
+        var titleStart = candidate.IndexOfAny([' ', '\t']);
+        if (titleStart >= 0)
+            candidate = candidate[..titleStart];
+
+        var fragment = candidate.IndexOf('#');
+        if (fragment >= 0)
+            candidate = candidate[..fragment];
+
+        candidate = candidate.Trim();
+        if (candidate.Length == 0 || UriSchemeRegex.IsMatch(candidate))
+            return null;
+
+        var combined = candidate.StartsWith('/')
+            ? candidate.TrimStart('/')
+            : Combine(GetDirectory(relativePath), candidate);
+
+        var normalized = NormalizeSegments(combined);
+        if (normalized is null)
+            return null;
+
+        if (normalized.Length == 0)
+            normalized = "index.md";
+        else if (!normalized.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            normalized = $"{normalized}/index.md";
+
+        return references.TryGetReference(normalized, out var reference) ? reference : null;
+    }
+
+    private async Task<string> ResolveReferenceAsync(
+        string requested,
+        bool isIndex,
+        CancellationToken cancellationToken)
+    {
+        if (requested.StartsWith(ReferencePrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var references = await GetReferencesAsync(cancellationToken).ConfigureAwait(false);
+            if (references.TryGetPath(requested, out var mapped))
+                return mapped;
+
+            throw new OkfException("Unknown reference. Use okf_search or an index to obtain a valid reference.");
+        }
+
+        if (requested.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            return requested;
+
+        return isIndex ? $"{requested.TrimEnd('/')}/index.md" : requested;
+    }
+
+    private static string GetDirectory(string relativePath)
+    {
+        var separator = relativePath.LastIndexOf('/');
+        return separator < 0 ? string.Empty : relativePath[..separator];
+    }
+
+    private static string Combine(string directory, string candidate) =>
+        directory.Length == 0 ? candidate : $"{directory}/{candidate}";
+
+    private static string? NormalizeSegments(string path)
+    {
+        var segments = new List<string>();
+        foreach (var segment in path.Split('/', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (segment == ".")
+                continue;
+
+            if (segment == "..")
+            {
+                if (segments.Count == 0)
+                    return null;
+
+                segments.RemoveAt(segments.Count - 1);
+                continue;
+            }
+
+            segments.Add(segment);
+        }
+
+        return string.Join('/', segments);
     }
 
     private string SafeBundlePath(string relativePath)
@@ -296,6 +438,26 @@ public sealed class OkfService
         return results;
     }
 
+    private Task<OkfReferences> GetReferencesAsync(CancellationToken cancellationToken)
+    {
+        lock (_cacheGate)
+        {
+            _referencesTask ??= LoadReferencesAsync();
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return _referencesTask;
+    }
+
+    private async Task<OkfReferences> LoadReferencesAsync()
+    {
+        var files = await GetMarkdownPathsAsync(CancellationToken.None).ConfigureAwait(false);
+        return new OkfReferences(files.Select(ToRelativePath));
+    }
+
+    private string ToRelativePath(string fullPath) =>
+        Path.GetRelativePath(_bundleRoot, fullPath).Replace('\\', '/');
+
     private Task<IReadOnlyList<OkfDocument>> GetDocumentsAsync(CancellationToken cancellationToken)
     {
         lock (_cacheGate)
@@ -314,8 +476,7 @@ public sealed class OkfService
         foreach (var file in files)
         {
             var content = await File.ReadAllTextAsync(file, Encoding.UTF8).ConfigureAwait(false);
-            var relative = Path.GetRelativePath(_bundleRoot, file).Replace('\\', '/');
-            documents.Add(new OkfDocument(relative, content, ParseMetadata(content)));
+            documents.Add(new OkfDocument(ToRelativePath(file), content, ParseMetadata(content)));
         }
 
         return documents;
@@ -393,4 +554,40 @@ public sealed class OkfService
         string RelativePath,
         string Content,
         IReadOnlyDictionary<string, string> Metadata);
+
+    /// <summary>
+    /// Stable, opaque handles for bundle documents. Callers never receive file names or paths.
+    /// </summary>
+    private sealed class OkfReferences
+    {
+        private readonly Dictionary<string, string> _pathByReference = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> _referenceByPath = new(StringComparer.OrdinalIgnoreCase);
+
+        public OkfReferences(IEnumerable<string> relativePaths)
+        {
+            foreach (var relativePath in relativePaths)
+            {
+                var reference = CreateReference(relativePath);
+                _pathByReference[reference] = relativePath;
+                _referenceByPath[relativePath] = reference;
+            }
+        }
+
+        public bool TryGetPath(string reference, out string relativePath) =>
+            _pathByReference.TryGetValue(reference, out relativePath!);
+
+        public bool TryGetReference(string relativePath, out string reference) =>
+            _referenceByPath.TryGetValue(relativePath, out reference!);
+
+        public string GetReference(string relativePath) =>
+            _referenceByPath.TryGetValue(relativePath, out var reference)
+                ? reference
+                : CreateReference(relativePath);
+
+        private static string CreateReference(string relativePath)
+        {
+            var hash = SHA256.HashData(Encoding.UTF8.GetBytes(relativePath.ToLowerInvariant()));
+            return ReferencePrefix + Convert.ToHexStringLower(hash.AsSpan(0, 5));
+        }
+    }
 }

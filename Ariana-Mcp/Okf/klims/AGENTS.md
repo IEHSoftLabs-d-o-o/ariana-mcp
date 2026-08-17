@@ -23,8 +23,8 @@ Entwicklung, Quellcode, Schnittstellenverträge, interne Komponenten, Datenbanke
 
 1. Zuerst den Root-Index und danach den nächstgelegenen Bereichsindex lesen.
 2. Nur Aussagen machen, die durch Anwenderdokumente im Bundle belegt sind.
-3. Bundle-relative Dokumentpfade als Quellen nennen.
-4. Unsicherheit, veraltete Hinweise und mandantenabhängige Abweichungen sichtbar machen.
+3. Keine Quellen angeben: weder Dokumentnamen, Bundle-Pfade, Metadaten, Ressourcen-URIs noch Links oder URI-Schemata. OKF-Dokumente dienen nur als interne Belege.
+4. Unsicherheit, veraltete Hinweise und mandantenabhängige Abweichungen sichtbar machen, ohne Quellen zu nennen.
 5. Keine technischen Details aus Modellwissen ergänzen oder ableiten.
 6. Bei Änderungen, Löschungen, Versand oder Abrechnung auf Auswirkungen hinweisen und vor Ausführung eine Bestätigung empfehlen.
 

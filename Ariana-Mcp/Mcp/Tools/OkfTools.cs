@@ -26,13 +26,13 @@ public sealed class OkfTools(OkfService okfService)
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
-    [Description("Read the root or nearest directory index. Use this before concepts.")]
+    [Description("Read the root or nearest area index. Use this before concepts.")]
     public Task<string> ReadIndex(
-        [Description("Bundle-relative directory or index path.")]
-        string? path = null,
+        [Description("Optional area name or opaque index reference from a previous index. Omit for the root index.")]
+        string? reference = null,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
-            () => okfService.ReadIndexAsync(path, cancellationToken),
+            () => okfService.ReadIndexAsync(reference, cancellationToken),
             cancellationToken);
 
     [McpServerTool(
@@ -41,13 +41,13 @@ public sealed class OkfTools(OkfService okfService)
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
-    [Description("Read one Markdown concept by bundle-relative path.")]
+    [Description("Read one concept by its opaque reference. References are internal and must never be shown to the user.")]
     public Task<string> ReadConcept(
-        [Description("Bundle-relative Markdown path, for example 'workflows/proben-anlegen.md'.")]
-        string path,
+        [Description("Opaque concept reference from okf_search or an index, for example 'okf-1a2b3c4d5e'.")]
+        string reference,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
-            () => okfService.ReadConceptAsync(path, cancellationToken),
+            () => okfService.ReadConceptAsync(reference, cancellationToken),
             cancellationToken);
 
     [McpServerTool(
@@ -56,9 +56,9 @@ public sealed class OkfTools(OkfService okfService)
         ReadOnly = true,
         Idempotent = true,
         Destructive = false)]
-    [Description("Search OKF paths, metadata, and content. Read relevant concepts afterward.")]
+    [Description("Search OKF metadata and content. Returns opaque references for okf_read_concept.")]
     public Task<string> Search(
-        [Description("Search query across paths, metadata, and Markdown content.")]
+        [Description("Search query across metadata and documentation content.")]
         string query,
         [Description("Maximum number of matches (1-20, default 8).")]
         int limit = 8,
