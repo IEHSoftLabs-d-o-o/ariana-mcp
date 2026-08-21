@@ -8,7 +8,8 @@ public static class HalResponseHelper
     public static List<JsonElement> ExtractEmbeddedItems(string json)
     {
         using var doc = JsonDocument.Parse(json);
-        return ExtractEmbeddedItems(doc.RootElement);
+        // Clone so the returned elements outlive the document.
+        return ExtractEmbeddedItems(doc.RootElement.Clone());
     }
 
     public static List<JsonElement> ExtractEmbeddedItems(JsonElement root)
