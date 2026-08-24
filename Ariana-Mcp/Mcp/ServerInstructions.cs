@@ -42,7 +42,8 @@ internal static class ServerInstructions
         Reference data: get_public_analyses, get_methods, get_product_classes, list_lab_parameters, list_units,
         list_product_groups, list_sample_groups, list_test_packages.
 
-        Orders: search_orders, get_order, search_customer_orders, get_customer_order, get_planning_orders.
+        Orders and planning: search_orders, get_order, search_customer_orders, search_schreibstellen, get_customer_order, get_planning_orders.
+        To start a Schreibstelle sequence, first use search_schreibstellen to obtain the sample journal number and configured sequence name.
 
         Diagnostics: get_system_info checks reachability and the signed-in user.
         OKF diagnostics: okf_bundle_status inspects the configured documentation bundle.

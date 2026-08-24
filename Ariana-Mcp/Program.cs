@@ -6,6 +6,7 @@ using Ariana_Mcp.Okf;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using ModelContextProtocol.Server;
 
 var argv = new List<string>(args);
 
@@ -28,6 +29,17 @@ builder.Services
     .WithResourcesFromAssembly();
 
 var app = builder.Build();
+
+// Tool types are activated lazily per call, so an unregistered dependency would only
+// surface as a failed tool invocation. Activate each one once to fail fast at startup.
+using (var scope = app.Services.CreateScope())
+{
+    foreach (var toolType in Assembly.GetExecutingAssembly().GetTypes()
+        .Where(type => !type.IsAbstract && type.GetCustomAttribute<McpServerToolTypeAttribute>() is not null))
+    {
+        ActivatorUtilities.CreateInstance(scope.ServiceProvider, toolType);
+    }
+}
 
 app.MapGet("/", () =>
 {

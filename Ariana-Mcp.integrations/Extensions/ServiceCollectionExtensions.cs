@@ -7,7 +7,7 @@ namespace Ariana_Mcp.Integrations.AraianLab;
 
 public static class ServiceCollectionExtensions
 {
-    private static readonly TimeSpan HttpClientTimeout = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan HttpClientTimeout = TimeSpan.FromMinutes(3);
 
     public static IServiceCollection AddAraianLabHttpClient(
         this IServiceCollection services,

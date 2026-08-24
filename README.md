@@ -1,6 +1,6 @@
 # Ariana MCP
 
-MCP server for read-only access to ArianaLab (Klims LIMS) from LLM clients such as Open WebUI. The server exposes tools and resources over HTTP at `/mcp` and supports MCP Streamable HTTP.
+MCP server for access to ArianaLab (Klims LIMS) from LLM clients such as Open WebUI. The server exposes tools and resources over HTTP at `/mcp` and supports MCP Streamable HTTP.
 
 Tool and resource descriptions are in German and optimized for DAUS-style prompts (e.g. *„Suche die Probe 26-0318054“*, *„Welcher Kunde gehört zu dieser Probe?“*).
 
@@ -42,7 +42,7 @@ Frage (Deutsch) → search_customers / search_samples
 | Results | `sample_results_by_id` | Parameters, measured values, methods |
 | Report | `report_json_by_sample` | Prüfbericht content and assessment |
 
-All read tools are marked as read-only, idempotent, and non-destructive.
+Read tools are marked as read-only, idempotent, and non-destructive. The `start_sequence` tool is a write operation and starts a sequence in ArianaLab.
 
 ## MCP Tools
 
@@ -89,6 +89,7 @@ All read tools are marked as read-only, idempotent, and non-destructive.
 | `search_orders` | Search internal orders (Probenanlage) |
 | `get_order` | Load one internal order by ID |
 | `search_customer_orders` | Search imported customer orders |
+| `search_schreibstellen` | Search Schreibstelle records with explicit fields from the ArianaLab search mask |
 | `get_customer_order` | Load one customer order by ID |
 | `get_planning_orders` | Search planning data by module (`auftraege`, `kundenauftraege`) |
 
@@ -105,6 +106,12 @@ All read tools are marked as read-only, idempotent, and non-destructive.
 | `search_cor` | Search Customer Order Requests |
 | `get_cor` | Load one COR by ID |
 | `validate_cor_gateway` | Validate a COR gateway payload without saving |
+
+### Sequences
+
+| Tool | Description |
+| --- | --- |
+| `start_sequence` | Starts Schreibstelle sequences for samples using their configured sequence names |
 
 ## MCP Resources
 
