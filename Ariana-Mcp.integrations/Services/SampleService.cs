@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using System.Net;
+using System.Text.Json.Serialization;
 using Ariana_Mcp.integrations.Exceptions;
 using Ariana_Mcp.integrations.Helpers;
 
@@ -9,6 +11,7 @@ public sealed class SampleService(IHttpClientFactory httpClientFactory)
 {
     private const int DefaultSearchLimit = 25;
     private const int MaxSearchLimit = 100;
+    private static readonly HashSet<string> AdditionalFieldOperators = [">", ">=", "<", "<=", "=", "~*", "!="];
 
     public async Task<string> GetSampleByIdAsync(
         string tagebuchnummer,
@@ -107,66 +110,161 @@ public sealed class SampleService(IHttpClientFactory httpClientFactory)
     }
 
     public async Task<string> SearchSamplesAsync(
-        string? q,
         string? tagebuchnummer,
-        string? kunde,
+        string? auftraggeber,
+        string? rechnungsempfaenger,
         string? kundenprobennummer,
         string? probenbezeichnung,
-        string? von,
-        string? bis,
-        string? status,
+        string? fertiggemeldetAmVon,
+        string? fertiggemeldetAmBis,
+        string? fertiggemeldetVon,
+        string? kategorie,
+        string? pruefkategorie,
+        IReadOnlyList<SampleAdditionalFieldFilter>? zusatzfelder,
+        bool? hauptprobe = true,
+        bool? etikettiert = null,
+        bool? erledigt = null,
+        bool? beurteilt = null,
+        bool? geprueft = null,
+        bool? fertiggemeldet = null,
+        bool? archiviert = null,
+        bool? storniert = false,
+        bool? freigabe = null,
+        bool? eilig = null,
+        bool? fakturiert = null,
+        IReadOnlyList<string>? pruefpakete = null,
+        string? kundengruppe1 = null,
+        IReadOnlyList<string>? probengruppen = null,
+        string? produktgruppe = null,
+        string? probeneingangVon = null,
+        string? probeneingangBis = null,
+        string? terminVon = null,
+        string? terminBis = null,
+        string? erfasstAmVon = null,
+        string? erfasstAmBis = null,
+        string? erfasstVon = null,
+        string? etikettiertAmVon = null,
+        string? etikettiertAmBis = null,
+        string? etikettiertVon = null,
+        IReadOnlyList<string>? abteilungen = null,
         int limit = DefaultSearchLimit,
         CancellationToken cancellationToken = default)
     {
         limit = Math.Clamp(limit, 1, MaxSearchLimit);
+        var conditions = new List<EasyQueryCondition>();
 
-        var query = q;
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            var filters = new Dictionary<string, string?>
-            {
-                ["tagebuchnummer"] = tagebuchnummer,
-                ["auftraggeber"] = kunde,
-                ["kundenprobennummer"] = kundenprobennummer,
-                ["probenbezeichnung"] = probenbezeichnung,
-            };
+        AddContains("tagebuchnummer", tagebuchnummer);
+        AddContains("auftraggeber", auftraggeber);
+        AddContains("rechnungsempfaenger", rechnungsempfaenger);
+        AddContains("kundenprobennummer", kundenprobennummer);
+        AddContains("probenbezeichnung", probenbezeichnung);
+        AddDateRange("fertiggemeldetam", fertiggemeldetAmVon, fertiggemeldetAmBis);
+        AddContains("fertiggemeldetvon", fertiggemeldetVon);
+        AddContains("kategorie", kategorie);
+        AddContains("pruefkategorie", pruefkategorie);
+        AddAdditionalFields(zusatzfelder);
+        AddBoolean("ishauptprobe", hauptprobe);
+        AddBoolean("etikettiert", etikettiert);
+        AddBoolean("erledigt", erledigt);
+        AddBoolean("beurteilt", beurteilt);
+        AddBoolean("geprueft", geprueft);
+        AddBoolean("fertiggemeldet", fertiggemeldet);
+        AddBoolean("archiviert", archiviert);
+        AddBoolean("storniert", storniert);
+        AddBoolean("freigabe", freigabe);
+        AddBoolean("eilig", eilig);
+        AddBoolean("fakturiert", fakturiert);
+        AddIdentifiers("pruefpaket", pruefpakete);
+        AddContains("kundengruppe1", kundengruppe1);
+        AddAny("probengruppe", probengruppen);
+        AddContains("produktgruppe", produktgruppe);
+        AddDateRange("probeneingang", probeneingangVon, probeneingangBis);
+        AddDateRange("termin", terminVon, terminBis);
+        AddDateRange("erfasstam", erfasstAmVon, erfasstAmBis);
+        AddContains("erfasstvon", erfasstVon);
+        AddDateRange("etikettiertam", etikettiertAmVon, etikettiertAmBis);
+        AddContains("etikettiertvon", etikettiertVon);
+        AddIdentifiers("abteilung", abteilungen);
 
-            var conditions = new List<EasyQueryCondition>();
-            foreach (var (property, value) in filters)
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                    continue;
+        if (conditions.Count == 0)
+            throw new ArianaLabException("Mindestens ein Suchkriterium muss angegeben werden.");
 
-                conditions.Add(property == "tagebuchnummer"
-                    ? EasyQueryCondition.Contains(property, value.Trim())
-                    : EasyQueryCondition.Contains(property, value.Trim()));
-            }
-
-            if (!string.IsNullOrWhiteSpace(von))
-                conditions.Add(EasyQueryCondition.GreaterOrEqual("probeneingangvon", von.Trim()));
-
-            if (!string.IsNullOrWhiteSpace(bis))
-                conditions.Add(EasyQueryCondition.LessOrEqual("probeneingangbis", bis.Trim()));
-
-            if (!string.IsNullOrWhiteSpace(status))
-                MapStatusCondition(status.Trim(), conditions);
-
-            if (conditions.Count == 0)
-                throw new ArianaLabException(
-                    "Mindestens ein Suchkriterium muss angegeben werden (q, tagebuchnummer, kunde, kundenprobennummer, probenbezeichnung, von, bis oder status).");
-
-            query = EasyQueryBuilder.BuildJson(conditions, limit);
-        }
-        else
-        {
-            query = EasyQueryBuilder.EnsureLimit(query, limit);
-        }
-
+        var query = EasyQueryBuilder.BuildJson(
+            conditions,
+            limit,
+            sortings: [new EasyQuerySorting("Tagebuchnummer", "desc")]);
         var body = await GetQueryAsync("Rest/Opd/Proben", query, cancellationToken);
         return HalResponseHelper.ProjectCompact(
             body,
             ["Tagebuchnummer", "Auftraggeber", "Probenbezeichnung", "Kundenprobennummer", "Status"],
             limit);
+
+        void AddContains(string property, string? value)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+                conditions.Add(EasyQueryCondition.Contains(property, value.Trim()));
+        }
+
+        void AddBoolean(string property, bool? value)
+        {
+            if (value.HasValue)
+                conditions.Add(EasyQueryCondition.Equals(property, value.Value ? "1" : "0"));
+        }
+
+        void AddDateRange(string property, string? from, string? to)
+        {
+            if (!string.IsNullOrWhiteSpace(from))
+                conditions.Add(EasyQueryCondition.GreaterOrEqual($"{property}von", from.Trim()));
+            if (!string.IsNullOrWhiteSpace(to))
+                conditions.Add(EasyQueryCondition.LessOrEqual($"{property}bis", to.Trim()));
+        }
+
+        void AddAdditionalFields(IReadOnlyList<SampleAdditionalFieldFilter>? fields)
+        {
+            foreach (var field in fields ?? [])
+            {
+                if (field is null)
+                    throw new ArianaLabException("Zusatzfelder dürfen nicht null sein.");
+                if (string.IsNullOrWhiteSpace(field.Bezeichnung) || string.IsNullOrWhiteSpace(field.Inhalt))
+                    throw new ArianaLabException("Jedes Zusatzfeld benötigt Bezeichnung und Inhalt.");
+                if (field.Bezeichnung.IndexOfAny(['[', ']']) >= 0)
+                    throw new ArianaLabException("Zusatzfeld-Bezeichnungen dürfen keine eckigen Klammern enthalten.");
+
+                var op = string.IsNullOrWhiteSpace(field.Operator) ? "~*" : field.Operator.Trim();
+                if (!AdditionalFieldOperators.Contains(op))
+                    throw new ArianaLabException(
+                        $"Ungültiger Zusatzfeld-Operator '{op}'. Erlaubt: {string.Join(", ", AdditionalFieldOperators)}.");
+
+                var pattern = field.Inhalt.Trim();
+                if (op == "~*" && !pattern.Contains('*'))
+                    pattern = $"*{pattern}*";
+
+                var name = field.Bezeichnung.Trim().Replace("'", "''", StringComparison.Ordinal);
+                conditions.Add(new EasyQueryCondition($"zusatzfeld[{name}]", op, pattern));
+            }
+        }
+
+        void AddIdentifiers(string property, IReadOnlyList<string>? identifiers)
+        {
+            var values = identifiers?
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim().Replace("'", "''", StringComparison.Ordinal))
+                .ToArray();
+            if (values is { Length: > 0 })
+                conditions.Add(EasyQueryCondition.Equals(
+                    $"{property}[{string.Join("','", values)}]",
+                    "1"));
+        }
+
+        void AddAny(string property, IReadOnlyList<string>? values)
+        {
+            var patterns = values?
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .ToArray();
+            if (patterns is { Length: > 0 })
+                conditions.Add(new EasyQueryCondition(property, "()", patterns));
+        }
     }
 
     public async Task<string> GetSampleLogsAsync(
@@ -214,25 +312,19 @@ public sealed class SampleService(IHttpClientFactory httpClientFactory)
         }
     }
 
-    private static void MapStatusCondition(string status, List<EasyQueryCondition> conditions)
-    {
-        switch (status.ToLowerInvariant())
-        {
-            case "fertiggemeldet":
-                conditions.Add(EasyQueryCondition.Equals("fertiggemeldet", "1"));
-                break;
-            case "beurteilt":
-                conditions.Add(EasyQueryCondition.Equals("beurteilt", "1"));
-                break;
-            case "storniert":
-                conditions.Add(EasyQueryCondition.Equals("storniert", "1"));
-                break;
-            case "archiviert":
-                conditions.Add(EasyQueryCondition.Equals("archiviert", "1"));
-                break;
-            default:
-                conditions.Add(EasyQueryCondition.Contains("probenbezeichnung", status));
-                break;
-        }
-    }
+}
+
+public sealed class SampleAdditionalFieldFilter
+{
+    [JsonPropertyName("Bezeichnung")]
+    [Description("Bezeichnung des Zusatzfelds, zum Beispiel 'Artikelnummer'.")]
+    public string Bezeichnung { get; init; } = string.Empty;
+
+    [JsonPropertyName("Operator")]
+    [Description("Vergleichsoperator: >, >=, <, <=, =, ~* oder !=. Standard ist ~* (enthält).")]
+    public string Operator { get; init; } = "~*";
+
+    [JsonPropertyName("Inhalt")]
+    [Description("Gesuchter Inhalt des Zusatzfelds.")]
+    public string Inhalt { get; init; } = string.Empty;
 }

@@ -13,12 +13,13 @@ public static class EasyQueryBuilder
     public static string BuildJson(
         IReadOnlyList<EasyQueryCondition>? conditions = null,
         int? limit = null,
-        int pageNumber = 0)
+        int pageNumber = 0,
+        IReadOnlyList<EasyQuerySorting>? sortings = null)
     {
         var query = new Dictionary<string, object?>
         {
             ["Conditions"] = conditions?.Select(ToDictionary).ToList() ?? [],
-            ["Sortings"] = Array.Empty<object>(),
+            ["Sortings"] = sortings?.Select(ToDictionary).ToList() ?? [],
             ["ResultFields"] = Array.Empty<object>(),
             ["Paging"] = limit is > 0
                 ? new Dictionary<string, object> { ["PageNumber"] = pageNumber, ["PageSize"] = limit.Value }
@@ -104,7 +105,15 @@ public static class EasyQueryBuilder
         ["Operator"] = condition.Operator,
         ["Pattern"] = condition.Pattern,
     };
+
+    private static Dictionary<string, object?> ToDictionary(EasyQuerySorting sorting) => new()
+    {
+        ["Property"] = sorting.Property,
+        ["Direction"] = sorting.Direction,
+    };
 }
+
+public readonly record struct EasyQuerySorting(string Property, string Direction);
 
 public readonly record struct EasyQueryCondition(string Property, string Operator, object Pattern)
 {

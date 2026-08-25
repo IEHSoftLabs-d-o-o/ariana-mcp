@@ -15,31 +15,126 @@ public sealed class SampleTools(SampleService sampleService, CustomerService cus
         Idempotent = true,
         Destructive = false)]
     [Description(
-        "Searches lab samples by lab journal number, customer, customer sample number, sample description, date range, or status. " +
+        "Searches lab samples using the fields from the ArianaLab sample-search form. " +
         "Use when the user wants to find a sample and the exact lab journal number is not known.")]
     public Task<string> SearchSamples(
-        [Description("Advanced EasyQuery search as JSON or a filter string. Optional when simple parameters are used.")]
-        string? q = null,
         [Description("Lab journal number or part of it, for example '26-0318054'.")]
         string? tagebuchnummer = null,
-        [Description("Customer name or part of the requester name, for example 'Müller'.")]
-        string? kunde = null,
+        [Description("Auftraggeber: customer name or number.")]
+        string? auftraggeber = null,
+        [Description("Rechnungsempfänger: invoice recipient name.")]
+        string? rechnungsempfaenger = null,
         [Description("Customer sample number or part of it.")]
         string? kundenprobennummer = null,
         [Description("Sample description or part of it.")]
         string? probenbezeichnung = null,
-        [Description("Received date from, for example '2026-01-01'.")]
-        string? von = null,
-        [Description("Received date through, for example '2026-03-31'.")]
-        string? bis = null,
-        [Description("Status, for example 'fertiggemeldet', 'beurteilt', or 'storniert'.")]
-        string? status = null,
-        [Description("Maximum number of matches (1-50, default 25).")]
+        [Description("Fertiggemeldet am, from date in yyyy-MM-dd format.")]
+        string? fertiggemeldetAmVon = null,
+        [Description("Fertiggemeldet am, through date in yyyy-MM-dd format.")]
+        string? fertiggemeldetAmBis = null,
+        [Description("User who reported the sample complete.")]
+        string? fertiggemeldetVon = null,
+        [Description("Kategorie.")]
+        string? kategorie = null,
+        [Description("Prüfkategorie.")]
+        string? pruefkategorie = null,
+        [Description("Zusatzfelder as [{ Bezeichnung, Operator, Inhalt }]. Operator defaults to ~*. Example: [{ Bezeichnung: 'Artikelnummer', Operator: '~*', Inhalt: '18903' }].")]
+        IReadOnlyList<SampleAdditionalFieldFilter>? zusatzfelder = null,
+        [Description("Hauptprobe: true=yes, false=no, null=all. Defaults to true.")]
+        bool? hauptprobe = true,
+        [Description("Etikettiert: true=yes, false=no, null=all.")]
+        bool? etikettiert = null,
+        [Description("Erledigt: true=yes, false=no, null=all.")]
+        bool? erledigt = null,
+        [Description("Beurteilt: true=yes, false=no, null=all.")]
+        bool? beurteilt = null,
+        [Description("Geprüft: true=yes, false=no, null=all.")]
+        bool? geprueft = null,
+        [Description("Fertiggemeldet: true=yes, false=no, null=all.")]
+        bool? fertiggemeldet = null,
+        [Description("Archiviert: true=yes, false=no, null=all.")]
+        bool? archiviert = null,
+        [Description("Storniert: true=yes, false=no, null=all. Defaults to false.")]
+        bool? storniert = false,
+        [Description("Freigabe: true=yes, false=no, null=all.")]
+        bool? freigabe = null,
+        [Description("Eilig: true=yes, false=no, null=all.")]
+        bool? eilig = null,
+        [Description("Fakturiert: true=yes, false=no, null=all.")]
+        bool? fakturiert = null,
+        [Description("Prüfpakete, for example ['Mikrobiologie', 'Chemie'].")]
+        IReadOnlyList<string>? pruefpakete = null,
+        [Description("Kundengruppe 1.")]
+        string? kundengruppe1 = null,
+        [Description("Probengruppen, for example ['Planproben'].")]
+        IReadOnlyList<string>? probengruppen = null,
+        [Description("Produktgruppe.")]
+        string? produktgruppe = null,
+        [Description("Probeneingang, from date in yyyy-MM-dd format.")]
+        string? probeneingangVon = null,
+        [Description("Probeneingang, through date in yyyy-MM-dd format.")]
+        string? probeneingangBis = null,
+        [Description("Termin, from date in yyyy-MM-dd format.")]
+        string? terminVon = null,
+        [Description("Termin, through date in yyyy-MM-dd format.")]
+        string? terminBis = null,
+        [Description("Erfasst am, from date in yyyy-MM-dd format.")]
+        string? erfasstAmVon = null,
+        [Description("Erfasst am, through date in yyyy-MM-dd format.")]
+        string? erfasstAmBis = null,
+        [Description("User who created the sample.")]
+        string? erfasstVon = null,
+        [Description("Etikettiert am, from date in yyyy-MM-dd format.")]
+        string? etikettiertAmVon = null,
+        [Description("Etikettiert am, through date in yyyy-MM-dd format.")]
+        string? etikettiertAmBis = null,
+        [Description("User who labeled the sample.")]
+        string? etikettiertVon = null,
+        [Description("Abteilungen, for example ['Mibi'] or ['Chemie', 'Mibi'].")]
+        IReadOnlyList<string>? abteilungen = null,
+        [Description("Maximum number of matches (1-100, default 25).")]
         int limit = 25,
         CancellationToken cancellationToken = default)
         => McpToolRunner.RunAsync(
             () => sampleService.SearchSamplesAsync(
-                q, tagebuchnummer, kunde, kundenprobennummer, probenbezeichnung, von, bis, status, limit,
+                tagebuchnummer,
+                auftraggeber,
+                rechnungsempfaenger,
+                kundenprobennummer,
+                probenbezeichnung,
+                fertiggemeldetAmVon,
+                fertiggemeldetAmBis,
+                fertiggemeldetVon,
+                kategorie,
+                pruefkategorie,
+                zusatzfelder,
+                hauptprobe,
+                etikettiert,
+                erledigt,
+                beurteilt,
+                geprueft,
+                fertiggemeldet,
+                archiviert,
+                storniert,
+                freigabe,
+                eilig,
+                fakturiert,
+                pruefpakete,
+                kundengruppe1,
+                probengruppen,
+                produktgruppe,
+                probeneingangVon,
+                probeneingangBis,
+                terminVon,
+                terminBis,
+                erfasstAmVon,
+                erfasstAmBis,
+                erfasstVon,
+                etikettiertAmVon,
+                etikettiertAmBis,
+                etikettiertVon,
+                abteilungen,
+                limit,
                 cancellationToken),
             cancellationToken);
 
