@@ -3,10 +3,8 @@ using Ariana_Mcp.Integrations.AraianLab;
 
 namespace Ariana_Mcp.integrations.Services;
 
-public sealed class AuthService(IHttpClientFactory httpClientFactory)
+public sealed class AuthService(IHttpClientFactory httpClientFactory, IArianaLabTokenService tokenService)
 {
-    private static readonly TimeSpan TokenLifetime = TimeSpan.FromHours(8);
-
     public async Task<LoginResponse> LoginAsync(
         string? user,
         string? password,
@@ -39,19 +37,17 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory)
             };
         }
 
+        var issued = tokenService.Issue(user, password);
         return new LoginResponse
         {
             ErrorMessage = string.Empty,
-            LoginToken = ToLoginToken(ArianaLabBearerToken.Create(user, password, TokenLifetime)),
+            LoginToken = new LoginTokenResponse
+            {
+                Token = issued.Token,
+                ExpireDate = issued.ExpireDate,
+            },
         };
     }
-
-    private static LoginTokenResponse ToLoginToken(ArianaLabAccessToken token) =>
-        new()
-        {
-            Token = token.Value,
-            ExpireDate = token.ExpireDate,
-        };
 
     private static bool IsRedirect(System.Net.HttpStatusCode statusCode)
     {

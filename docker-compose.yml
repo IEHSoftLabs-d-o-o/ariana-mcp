@@ -11,6 +11,8 @@ services:
     environment:
       ASPNETCORE_URLS: http://0.0.0.0:5000
       ARIANALAB_BASE_URL: ${ARIANALAB_BASE_URL:-https://klims.labor-kneissler.de/}
+      ARIANALAB_JWT_SIGNING_KEY: ${ARIANALAB_JWT_SIGNING_KEY}
+      ARIANALAB_JWT_ENCRYPTION_KEY: ${ARIANALAB_JWT_ENCRYPTION_KEY}
     restart: unless-stopped
 
   open-webui:

@@ -19,7 +19,7 @@ Especially with local Ollama models, there is no guarantee that the model will r
 - Server-side EasyQuery search for customers and samples (no full customer list download)
 - Health endpoint at `/health` and info endpoint at `/`
 - Configuration via `appsettings.json`, environment variables, and optional `appsettings.override.json`
-- ArianaLab integration via HTTP client with Bearer Auth (token from username and password)
+- ArianaLab integration via per-user JWT (Bearer) that is resolved to Basic Auth for KLIMS REST
 - Serilog console logging
 - Dockerfile and Docker Compose baseline for running alongside Open WebUI
 
@@ -141,17 +141,24 @@ Each tester uses their own KLIMS login. Call `POST /login` with `user` and `pass
 
 `Authorization: Bearer <loginToken.token>`
 
-The token includes an expiry (`loginToken.expireDate`, 8 hours). Expired or missing tokens return **401**. There is no shared username/password fallback: every ArianaLab call needs `Authorization: Bearer <token>` from `/login`.
+`/login` checks the credentials against KLIMS `Home/Login`. On success it issues a signed JWT (`loginToken.token`) that expires after 8 hours. The JWT carries the lab user (and room for later claims). The KLIMS password is stored only in an encrypted claim, not as readable Base64. Expired or missing tokens return **401**.
 
-The server decodes `user:password` from that token and calls ArianaLab REST with HTTP Basic Auth (KLIMS Rest does not accept Bearer). Do not put credentials in committed files.
+The MCP client always sends `Authorization: Bearer <jwt>`. The server validates the JWT and then calls ArianaLab REST with HTTP Basic Auth.
+
+Set `ARIANALAB_JWT_SIGNING_KEY` and `ARIANALAB_JWT_ENCRYPTION_KEY` in production so tokens survive process restarts. If they are empty, keys are generated at startup and existing tokens become invalid after a restart.
 
 ```powershell
 $env:ARIANALAB_BASE_URL = "https://klims.labor-kneissler.de/"
+$env:ARIANALAB_JWT_SIGNING_KEY = "<32+ character secret>"
+$env:ARIANALAB_JWT_ENCRYPTION_KEY = "<32+ character secret>"
 ```
 
 | Setting | Default | Description |
 | --- | --- | --- |
 | `BaseUrl` | `https://klims.labor-kneissler.de/` | ArianaLab base URL |
+| `Jwt:SigningKey` | generated at startup if empty | HMAC key for JWT signatures |
+| `Jwt:EncryptionKey` | generated at startup if empty | AES key for the password claim |
+| `Jwt:LifetimeHours` | 8 | JWT lifetime |
 
 ## Running Locally
 

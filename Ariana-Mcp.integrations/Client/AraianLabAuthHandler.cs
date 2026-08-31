@@ -4,9 +4,11 @@ using Ariana_Mcp.integrations.Exceptions;
 
 namespace Ariana_Mcp.Integrations.AraianLab;
 
-public sealed class AraianLabAuthHandler(IArianaLabRequestAuth? requestAuth = null) : DelegatingHandler
+public sealed class AraianLabAuthHandler(
+    IArianaLabTokenService tokenService,
+    IArianaLabRequestAuth? requestAuth = null) : DelegatingHandler
 {
-    protected override Task<HttpResponseMessage> SendAsync(
+    protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
@@ -14,21 +16,24 @@ public sealed class AraianLabAuthHandler(IArianaLabRequestAuth? requestAuth = nu
             ? $"{existing.Scheme} {existing.Parameter}"
             : requestAuth?.AuthorizationHeader;
 
-        if (!ArianaLabBearerToken.TryParse(header, out var token) || token is null)
-        {
-            throw new ArianaLabException(
-                "Missing or invalid Bearer token. Call POST /login and send Authorization: Bearer <token>.",
-                HttpStatusCode.Unauthorized);
-        }
-
-        if (token.IsExpired)
+        var validation = await tokenService.ValidateAuthorizationHeaderAsync(header).ConfigureAwait(false);
+        if (validation.Status == ArianaLabTokenStatus.Expired)
         {
             throw new ArianaLabException(
                 "The Bearer token has expired. Call POST /login again.",
                 HttpStatusCode.Unauthorized);
         }
 
-        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", token.Credentials);
-        return base.SendAsync(request, cancellationToken);
+        if (!validation.IsValid || string.IsNullOrEmpty(validation.User) || string.IsNullOrEmpty(validation.Password))
+        {
+            throw new ArianaLabException(
+                "Missing or invalid Bearer token. Call POST /login and send Authorization: Bearer <token>.",
+                HttpStatusCode.Unauthorized);
+        }
+
+        var credentials = Convert.ToBase64String(
+            System.Text.Encoding.UTF8.GetBytes($"{validation.User}:{validation.Password}"));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
+        return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
 }
