@@ -1,6 +1,7 @@
 using Ariana_Mcp.integrations.Helpers;
 using Ariana_Mcp.integrations.Services;
-using Microsoft.Extensions.Configuration;using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Ariana_Mcp.Integrations.AraianLab;
@@ -19,6 +20,7 @@ public static class ServiceCollectionExtensions
             .ValidateOnStart();
 
         services.AddTransient<AraianLabAuthHandler>();
+        services.AddTransient<AuthService>();
         services.AddTransient<CustomerService>();
         services.AddTransient<SampleService>();
         services.AddTransient<ReferenceDataService>();
@@ -32,6 +34,17 @@ public static class ServiceCollectionExtensions
                 client.Timeout = HttpClientTimeout;
             })
             .AddHttpMessageHandler<AraianLabAuthHandler>();
+
+        services.AddHttpClient(ArianaLabHttp.LoginClientName, (sp, client) =>
+            {
+                var options = sp.GetRequiredService<IOptions<AraianLabClientOptions>>().Value;
+                client.BaseAddress = new Uri(options.BaseUrl);
+                client.Timeout = HttpClientTimeout;
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                AllowAutoRedirect = false,
+            });
 
         return services;
     }

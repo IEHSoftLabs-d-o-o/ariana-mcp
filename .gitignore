@@ -481,3 +481,6 @@ fabric.properties
 **/appsettings.Development.json
 **/appsettings.Production.json
 **/appsettings.override.json
+.env
+.env.*
+!.env.example
