@@ -22,7 +22,7 @@ public sealed class ArianaLabTokenService : IArianaLabTokenService
     {
         _jwt = options.Value.Jwt;
         if (_jwt.LifetimeHours <= 0)
-            _jwt.LifetimeHours = 8;
+            _jwt.LifetimeHours = 17520;
 
         _signingKey = new SymmetricSecurityKey(ResolveKeyBytes(_jwt.SigningKey, 32));
         _encryptionKey = ResolveKeyBytes(_jwt.EncryptionKey, 32);

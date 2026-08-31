@@ -20,7 +20,7 @@ public sealed class ArianaLabJwtOptions
 
     public string EncryptionKey { get; set; } = "";
 
-    public int LifetimeHours { get; set; } = 8;
+    public int LifetimeHours { get; set; } = 17520;
 
     public string Issuer { get; set; } = "ariana-mcp";
 
