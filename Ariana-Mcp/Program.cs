@@ -90,16 +90,31 @@ app.MapPost("/login", async (
     AuthService authService,
     CancellationToken cancellationToken) =>
 {
-    var result = await authService.LoginAsync(
-        request.User,
-        request.Password,
-        cancellationToken);
-    return Results.Ok(result);
+    try
+    {
+        var result = await authService.LoginAsync(
+            request.User,
+            request.Password,
+            cancellationToken);
+
+        if (result.LoginToken is null)
+            return Results.BadRequest(result);
+
+        return Results.Ok(result);
+    }
+    catch (Exception)
+    {
+        return Results.Json(
+            new LoginResponse { ErrorMessage = "Login failed because ArianaLab could not be reached." },
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
 })
 .WithName("Login")
 .WithTags("Auth")
 .WithSummary("Login with ArianaLab user and password")
-.Produces<LoginResponse>();
+.Produces<LoginResponse>(StatusCodes.Status200OK)
+.Produces<LoginResponse>(StatusCodes.Status400BadRequest)
+.Produces<LoginResponse>(StatusCodes.Status500InternalServerError);
 
 app.MapGet("/system", async (SystemService systemService, CancellationToken cancellationToken) =>
 {
