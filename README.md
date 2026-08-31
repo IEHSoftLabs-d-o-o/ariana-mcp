@@ -19,7 +19,7 @@ Especially with local Ollama models, there is no guarantee that the model will r
 - Server-side EasyQuery search for customers and samples (no full customer list download)
 - Health endpoint at `/health` and info endpoint at `/`
 - Configuration via `appsettings.json`, environment variables, and optional `appsettings.override.json`
-- ArianaLab integration via HTTP client with Bearer Auth (token from username and password)
+- ArianaLab integration via HTTP client with Basic Auth
 - Serilog console logging
 - Dockerfile and Docker Compose baseline for running alongside Open WebUI
 
@@ -137,13 +137,7 @@ Resource templates for clients that prefer MCP resources over tool calls:
 
 ## Configuration
 
-Each tester uses their own KLIMS login. Call `POST /login` with `user` and `password`. The server posts those to `https://klims.labor-kneissler.de/Home/Login` (form fields `Name` and `Password`). On success, send the returned token on later requests:
-
-`Authorization: Bearer <loginToken.token>`
-
-The server decodes `user:password` from that token and calls ArianaLab REST with HTTP Basic Auth (KLIMS Rest does not accept Bearer). Do not put credentials in committed files.
-
-Optional fallback (only if no `Authorization` header is sent):
+Environment variables:
 
 ```powershell
 $env:ARIANALAB_USER = "<username>"
@@ -151,11 +145,25 @@ $env:ARIANALAB_PASSWORD = "<password>"
 $env:ARIANALAB_BASE_URL = "https://klims.labor-kneissler.de/"
 ```
 
+Optional local override in `Ariana-Mcp/appsettings.override.json`:
+
+```json
+{
+  "AraianLab": {
+    "User": "<username>",
+    "Password": "<password>",
+    "BaseUrl": "https://klims.labor-kneissler.de/"
+  }
+}
+```
+
 | Setting | Default | Description |
 | --- | --- | --- |
-| `User` | optional | Fallback username when no Bearer token is sent |
-| `Password` | optional | Fallback password when no Bearer token is sent |
-| `BaseUrl` | `https://klims.labor-kneissler.de/` | ArianaLab base URL |
+| `User` | required | ArianaLab Basic Auth username |
+| `Password` | required | ArianaLab Basic Auth password |
+| `BaseUrl` | required | ArianaLab base URL |
+
+Do not commit credentials to Git.
 
 ## Running Locally
 
@@ -169,9 +177,6 @@ Endpoints:
 
 - `http://localhost:5000/` — app name and version
 - `http://localhost:5000/health` — health check
-- `http://localhost:5000/login` — POST ArianaLab user/password, returns a Bearer token
-- `http://localhost:5000/system` — GET ArianaLab current user using the Bearer token
-- `http://localhost:5000/swagger` — Swagger UI
 - `http://localhost:5000/mcp` — MCP endpoint
 
 ## Using with Open WebUI and Ollama
@@ -190,7 +195,6 @@ Ollama <-> Open WebUI <-> Ariana MCP <-> ArianaLab
    - Same Docker Compose network: `http://Ariana-Mcp:5000/mcp`
    - Both on host: `http://localhost:5000/mcp`
 5. Enable tools for the desired model (Function Calling: **Native** if available).
-6. Add header `Authorization: Bearer <token>` from `POST /login` so ArianaLab calls use that account.
 
 ### Example prompts (German)
 
