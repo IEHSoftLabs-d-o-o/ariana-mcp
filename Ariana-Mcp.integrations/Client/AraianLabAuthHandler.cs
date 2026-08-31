@@ -1,24 +1,39 @@
+using System.Net;
 using System.Net.Http.Headers;
-using System.Text;
-using Microsoft.Extensions.Options;
+using Ariana_Mcp.integrations.Exceptions;
 
 namespace Ariana_Mcp.Integrations.AraianLab;
 
-public sealed class AraianLabAuthHandler(IOptions<AraianLabClientOptions> options) : DelegatingHandler
+public sealed class AraianLabAuthHandler(
+    IArianaLabTokenService tokenService,
+    IArianaLabRequestAuth? requestAuth = null) : DelegatingHandler
 {
-    private readonly AraianLabClientOptions _options = options.Value;
-
-    protected override Task<HttpResponseMessage> SendAsync(
+    protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrEmpty(_options.User))
+        var header = request.Headers.Authorization is { Parameter.Length: > 0 } existing
+            ? $"{existing.Scheme} {existing.Parameter}"
+            : requestAuth?.AuthorizationHeader;
+
+        var validation = await tokenService.ValidateAuthorizationHeaderAsync(header).ConfigureAwait(false);
+        if (validation.Status == ArianaLabTokenStatus.Expired)
         {
-            var raw = $"{_options.User}:{_options.Password}";
-            var token = Convert.ToBase64String(Encoding.UTF8.GetBytes(raw));
-            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", token);
+            throw new ArianaLabException(
+                "The Bearer token has expired. Call POST /login again.",
+                HttpStatusCode.Unauthorized);
         }
 
-        return base.SendAsync(request, cancellationToken);
+        if (!validation.IsValid || string.IsNullOrEmpty(validation.User) || string.IsNullOrEmpty(validation.Password))
+        {
+            throw new ArianaLabException(
+                "Missing or invalid Bearer token. Call POST /login and send Authorization: Bearer <token>.",
+                HttpStatusCode.Unauthorized);
+        }
+
+        var credentials = Convert.ToBase64String(
+            System.Text.Encoding.UTF8.GetBytes($"{validation.User}:{validation.Password}"));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
+        return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
 }

@@ -18,6 +18,7 @@ public static class ServiceCollectionExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddSingleton<IArianaLabTokenService, ArianaLabTokenService>();
         services.AddTransient<AraianLabAuthHandler>();
         services.AddTransient<CustomerService>();
         services.AddTransient<SampleService>();

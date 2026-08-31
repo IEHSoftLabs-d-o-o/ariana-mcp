@@ -19,7 +19,7 @@ Especially with local Ollama models, there is no guarantee that the model will r
 - Server-side EasyQuery search for customers and samples (no full customer list download)
 - Health endpoint at `/health` and info endpoint at `/`
 - Configuration via `appsettings.json`, environment variables, and optional `appsettings.override.json`
-- ArianaLab integration via HTTP client with Basic Auth
+- ArianaLab integration via per-user JWT (Bearer) that is resolved to Basic Auth for KLIMS REST
 - Serilog console logging
 - Dockerfile and Docker Compose baseline for running alongside Open WebUI
 
@@ -137,33 +137,28 @@ Resource templates for clients that prefer MCP resources over tool calls:
 
 ## Configuration
 
-Environment variables:
+Each tester uses their own KLIMS login. Call `POST /login` with `user` and `password`. The server posts those to `https://klims.labor-kneissler.de/Home/Login` (form fields `Name` and `Password`). On success, send the returned token on later requests:
+
+`Authorization: Bearer <loginToken.token>`
+
+`/login` checks the credentials against KLIMS `Home/Login`. On success it issues a signed JWT (`loginToken.token`) that expires after 8 hours. The JWT carries the lab user (and room for later claims). The KLIMS password is stored only in an encrypted claim, not as readable Base64. Expired or missing tokens return **401**.
+
+The MCP client always sends `Authorization: Bearer <jwt>`. The server validates the JWT and then calls ArianaLab REST with HTTP Basic Auth.
+
+Set `ARIANALAB_JWT_SIGNING_KEY` and `ARIANALAB_JWT_ENCRYPTION_KEY` in production so tokens survive process restarts. If they are empty, keys are generated at startup and existing tokens become invalid after a restart.
 
 ```powershell
-$env:ARIANALAB_USER = "<username>"
-$env:ARIANALAB_PASSWORD = "<password>"
 $env:ARIANALAB_BASE_URL = "https://klims.labor-kneissler.de/"
-```
-
-Optional local override in `Ariana-Mcp/appsettings.override.json`:
-
-```json
-{
-  "AraianLab": {
-    "User": "<username>",
-    "Password": "<password>",
-    "BaseUrl": "https://klims.labor-kneissler.de/"
-  }
-}
+$env:ARIANALAB_JWT_SIGNING_KEY = "<32+ character secret>"
+$env:ARIANALAB_JWT_ENCRYPTION_KEY = "<32+ character secret>"
 ```
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `User` | required | ArianaLab Basic Auth username |
-| `Password` | required | ArianaLab Basic Auth password |
-| `BaseUrl` | required | ArianaLab base URL |
-
-Do not commit credentials to Git.
+| `BaseUrl` | `https://klims.labor-kneissler.de/` | ArianaLab base URL |
+| `Jwt:SigningKey` | generated at startup if empty | HMAC key for JWT signatures |
+| `Jwt:EncryptionKey` | generated at startup if empty | AES key for the password claim |
+| `Jwt:LifetimeHours` | 8 | JWT lifetime |
 
 ## Running Locally
 
@@ -177,6 +172,9 @@ Endpoints:
 
 - `http://localhost:5000/` — app name and version
 - `http://localhost:5000/health` — health check
+- `http://localhost:5000/login` — POST ArianaLab user/password, returns a Bearer token
+- `http://localhost:5000/system` — GET ArianaLab current user using the Bearer token
+- `http://localhost:5000/swagger` — Swagger UI
 - `http://localhost:5000/mcp` — MCP endpoint
 
 ## Using with Open WebUI and Ollama
@@ -195,6 +193,7 @@ Ollama <-> Open WebUI <-> Ariana MCP <-> ArianaLab
    - Same Docker Compose network: `http://Ariana-Mcp:5000/mcp`
    - Both on host: `http://localhost:5000/mcp`
 5. Enable tools for the desired model (Function Calling: **Native** if available).
+6. Add header `Authorization: Bearer <token>` from `POST /login` so ArianaLab calls use that account.
 
 ### Example prompts (German)
 
