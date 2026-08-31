@@ -141,20 +141,16 @@ Each tester uses their own KLIMS login. Call `POST /login` with `user` and `pass
 
 `Authorization: Bearer <loginToken.token>`
 
+The token includes an expiry (`loginToken.expireDate`, 8 hours). Expired or missing tokens return **401**. There is no shared username/password fallback: every ArianaLab call needs `Authorization: Bearer <token>` from `/login`.
+
 The server decodes `user:password` from that token and calls ArianaLab REST with HTTP Basic Auth (KLIMS Rest does not accept Bearer). Do not put credentials in committed files.
 
-Optional fallback (only if no `Authorization` header is sent):
-
 ```powershell
-$env:ARIANALAB_USER = "<username>"
-$env:ARIANALAB_PASSWORD = "<password>"
 $env:ARIANALAB_BASE_URL = "https://klims.labor-kneissler.de/"
 ```
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `User` | optional | Fallback username when no Bearer token is sent |
-| `Password` | optional | Fallback password when no Bearer token is sent |
 | `BaseUrl` | `https://klims.labor-kneissler.de/` | ArianaLab base URL |
 
 ## Running Locally

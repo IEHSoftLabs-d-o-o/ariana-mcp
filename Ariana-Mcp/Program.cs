@@ -98,7 +98,11 @@ app.MapPost("/login", async (
             cancellationToken);
 
         if (result.LoginToken is null)
-            return Results.BadRequest(result);
+        {
+            return Results.Text(
+                result.ErrorMessage ?? "Login failed. Check user name and password.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
 
         return Results.Ok(result);
     }
@@ -113,17 +117,39 @@ app.MapPost("/login", async (
 .WithTags("Auth")
 .WithSummary("Login with ArianaLab user and password")
 .Produces<LoginResponse>(StatusCodes.Status200OK)
-.Produces<LoginResponse>(StatusCodes.Status400BadRequest)
+.Produces<string>(StatusCodes.Status400BadRequest)
 .Produces<LoginResponse>(StatusCodes.Status500InternalServerError);
 
-app.MapGet("/system", async (SystemService systemService, CancellationToken cancellationToken) =>
+app.MapGet("/system", async (
+    HttpContext httpContext,
+    SystemService systemService,
+    CancellationToken cancellationToken) =>
 {
+    if (!ArianaLabBearerToken.TryParse(
+            httpContext.Request.Headers.Authorization.ToString(),
+            out var accessToken)
+        || accessToken is null)
+    {
+        return Results.Json(
+            new { errorMessage = "Missing or invalid Bearer token." },
+            statusCode: StatusCodes.Status401Unauthorized);
+    }
+
+    if (accessToken.IsExpired)
+    {
+        return Results.Json(
+            new { errorMessage = "The Bearer token has expired. Call POST /login again." },
+            statusCode: StatusCodes.Status401Unauthorized);
+    }
+
     var json = await systemService.GetSystemInfoAsync(cancellationToken);
     return Results.Content(json, "application/json");
 })
 .WithName("GetSystemInfo")
 .WithTags("Auth")
-.WithSummary("Calls ArianaLab currentUser with the Bearer token (same as get_system_info)");
+.WithSummary("Calls ArianaLab currentUser with the Bearer token (same as get_system_info)")
+.Produces(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status401Unauthorized);
 
 app.MapOpenApi("/openapi.json");
 app.MapMcp("/mcp");

@@ -42,13 +42,16 @@ public sealed class AuthService(IHttpClientFactory httpClientFactory)
         return new LoginResponse
         {
             ErrorMessage = string.Empty,
-            LoginToken = new LoginTokenResponse
-            {
-                Token = ArianaLabBearerToken.Create(user, password),
-                ExpireDate = DateTimeOffset.UtcNow.Add(TokenLifetime),
-            },
+            LoginToken = ToLoginToken(ArianaLabBearerToken.Create(user, password, TokenLifetime)),
         };
     }
+
+    private static LoginTokenResponse ToLoginToken(ArianaLabAccessToken token) =>
+        new()
+        {
+            Token = token.Value,
+            ExpireDate = token.ExpireDate,
+        };
 
     private static bool IsRedirect(System.Net.HttpStatusCode statusCode)
     {

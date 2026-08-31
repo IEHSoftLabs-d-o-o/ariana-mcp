@@ -1,43 +1,34 @@
+using System.Net;
 using System.Net.Http.Headers;
-using Microsoft.Extensions.Options;
+using Ariana_Mcp.integrations.Exceptions;
 
 namespace Ariana_Mcp.Integrations.AraianLab;
 
-public sealed class AraianLabAuthHandler(
-    IOptions<AraianLabClientOptions> options,
-    IArianaLabRequestAuth? requestAuth = null) : DelegatingHandler
+public sealed class AraianLabAuthHandler(IArianaLabRequestAuth? requestAuth = null) : DelegatingHandler
 {
-    private readonly AraianLabClientOptions _options = options.Value;
-
     protected override Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        var token = ResolveToken(request);
-        if (!string.IsNullOrEmpty(token))
-            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", token);
+        var header = request.Headers.Authorization is { Parameter.Length: > 0 } existing
+            ? $"{existing.Scheme} {existing.Parameter}"
+            : requestAuth?.AuthorizationHeader;
 
-        return base.SendAsync(request, cancellationToken);
-    }
-
-    private string? ResolveToken(HttpRequestMessage request)
-    {
-        if (request.Headers.Authorization?.Parameter is { Length: > 0 } existing
-            && ArianaLabBearerToken.TryRead(
-                $"{request.Headers.Authorization.Scheme} {existing}",
-                out _,
-                out _,
-                out var requestToken))
+        if (!ArianaLabBearerToken.TryParse(header, out var token) || token is null)
         {
-            return requestToken;
+            throw new ArianaLabException(
+                "Missing or invalid Bearer token. Call POST /login and send Authorization: Bearer <token>.",
+                HttpStatusCode.Unauthorized);
         }
 
-        if (ArianaLabBearerToken.TryRead(requestAuth?.AuthorizationHeader, out _, out _, out var incomingToken))
-            return incomingToken;
+        if (token.IsExpired)
+        {
+            throw new ArianaLabException(
+                "The Bearer token has expired. Call POST /login again.",
+                HttpStatusCode.Unauthorized);
+        }
 
-        if (!string.IsNullOrEmpty(_options.User) && !string.IsNullOrEmpty(_options.Password))
-            return ArianaLabBearerToken.Create(_options.User, _options.Password);
-
-        return null;
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", token.Credentials);
+        return base.SendAsync(request, cancellationToken);
     }
 }
